@@ -1,6 +1,14 @@
-import { login, signup } from '../auth/actions'
+'use client'
+
+import { useActionState } from 'react'
+import Link from 'next/link'
+import { login } from '../auth/actions'
 
 export default function LoginPage() {
+    const [loginState, loginAction, isLoginPending] = useActionState(login, null)
+
+    console.log('Login State:', loginState)
+
     return (
         <div className='flex h-screen items-center justify-center bg-background p-4'>
             <div className='w-full max-w-sm overflow-hidden rounded-xl border border-border bg-card p-6 shadow-sm'>
@@ -37,18 +45,27 @@ export default function LoginPage() {
                             className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
                         />
                     </div>
+
+                    {loginState?.error && (
+                        <div className='text-sm text-red-500 font-medium text-center'>
+                            {loginState.error}
+                        </div>
+                    )}
+
                     <button
-                        formAction={login}
+                        formAction={loginAction}
+                        disabled={isLoginPending}
                         className='inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
                     >
-                        Sign In
+                        {isLoginPending ? 'Signing In...' : 'Sign In'}
                     </button>
-                    <button
-                        formAction={signup}
-                        className='inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
-                    >
-                        Sign Up
-                    </button>
+
+                    <div className='text-center text-sm'>
+                        Don&apos;t have an account?{' '}
+                        <Link href='/signup' className='font-medium text-primary hover:underline'>
+                            Sign Up
+                        </Link>
+                    </div>
                 </form>
             </div>
         </div>

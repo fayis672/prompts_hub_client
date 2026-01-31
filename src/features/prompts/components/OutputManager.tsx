@@ -46,14 +46,14 @@ export function OutputManager() {
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 space-y-4">
                                 <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
+                                    <div className="space-y-6">
                                         <Label>Title</Label>
                                         <Input
                                             placeholder="Example Output 1"
                                             {...register(`prompt_outputs.${index}.title`)}
                                         />
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-6">
                                         <Label>Type</Label>
                                         <select
                                             className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -65,7 +65,7 @@ export function OutputManager() {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Content (Text)</Label>
                                     <Textarea
                                         placeholder="Output content..."

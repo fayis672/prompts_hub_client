@@ -69,7 +69,7 @@ export function CreatePromptForm() {
                     <div className="lg:col-span-2 space-y-8">
                         {/* Basic Info */}
                         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 space-y-4">
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label htmlFor="title">Prompt Title</Label>
                                 <Input
                                     id="title"
@@ -81,7 +81,7 @@ export function CreatePromptForm() {
                                     <p className="text-sm text-destructive">{methods.formState.errors.title.message}</p>
                                 )}
                             </div>
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label htmlFor="description">Description</Label>
                                 <Textarea
                                     id="description"
@@ -118,7 +118,7 @@ export function CreatePromptForm() {
                         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6 space-y-6">
                             <h3 className="font-semibold">Settings</h3>
 
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Category</Label>
                                 {/* In a real app, this would be a dynamic select fetching categories */}
                                 <Controller
@@ -139,7 +139,7 @@ export function CreatePromptForm() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Privacy</Label>
                                 <Controller
                                     control={methods.control}
@@ -159,7 +159,7 @@ export function CreatePromptForm() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Status</Label>
                                 <Controller
                                     control={methods.control}
@@ -180,7 +180,7 @@ export function CreatePromptForm() {
                             </div>
 
                             {/* Tags placeholder - simpler implementation for now */}
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                                 <Label>Tags</Label>
                                 <Input placeholder="Add tags (comma separated)..." />
                             </div>

@@ -46,14 +46,14 @@ export function VariableManager() {
                     >
                         <div className="flex items-start justify-between gap-4">
                             <div className="grid flex-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Name</Label>
                                     <Input
                                         placeholder="Display Name"
                                         {...register(`variables.${index}.variable_name`)}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Key</Label>
                                     <Input
                                         placeholder="variable_key"
@@ -61,7 +61,7 @@ export function VariableManager() {
                                         {...register(`variables.${index}.variable_key`)}
                                     />
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-6">
                                     <Label>Type</Label>
                                     <Controller
                                         control={control}
