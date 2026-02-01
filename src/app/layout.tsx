@@ -4,6 +4,8 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/api/users";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,11 +22,19 @@ export const metadata: Metadata = {
   description: "Prompts Hub Client Application",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = await createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  let user = null
+
+  if (session?.access_token) {
+    user = await getCurrentUser(session.access_token)
+  }
+
   return (
     <html lang="en">
       <body
@@ -32,7 +42,7 @@ export default function RootLayout({
       >
         <QueryProvider>
           <div className="flex flex-col min-h-screen">
-            <Navbar />
+            <Navbar user={user} />
             <main className="flex-1 pt-24">
               {children}
             </main>

@@ -46,7 +46,7 @@ export async function login(prevState: any, formData: FormData) {
     const password = formData?.get('password') as string
 
     if (!email || !password) {
-        return { error: 'Email and password are required' }
+        return { error: 'Email and password are required', email }
     }
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -55,7 +55,7 @@ export async function login(prevState: any, formData: FormData) {
     })
 
     if (error) {
-        return { error: error.message === 'Invalid login credentials' ? 'Invalid email or password' : error.message }
+        return { error: error.message === 'Invalid login credentials' ? 'Invalid email or password' : error.message, email }
     }
 
     try {
@@ -89,7 +89,7 @@ export async function signup(prevState: any, formData: FormData) {
     const password = formData?.get('password') as string
 
     if (!email || !password) {
-        return { error: 'Email and password are required' }
+        return { error: 'Email and password are required', email }
     }
 
     const { error } = await supabase.auth.signUp({
@@ -99,9 +99,9 @@ export async function signup(prevState: any, formData: FormData) {
 
     if (error) {
         if (error.message.includes('already registered')) {
-            return { error: 'This email is already registered. Please sign in.' }
+            return { error: 'This email is already registered. Please sign in.', email }
         }
-        return { error: error.message }
+        return { error: error.message, email }
     }
 
     try {

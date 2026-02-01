@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Search, Menu } from "lucide-react"; // Assuming lucide-react is installed
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils"; // Assuming a utility for class merging exists or I will create one inline if needed.
+import { ProfileMenu } from "./ProfileMenu";
 
 // Since I don't see a lib/utils.ts file in the file list earlier, I'll inline the class merger if needed or better yet, I should check if it exists. 
 // Given the Shadcn UI mentioned in previous conversation context (implied), it usually has one. 
@@ -18,7 +19,11 @@ import { cn } from "@/lib/utils"; // Assuming a utility for class merging exists
 // I'll stick to direct `clsx` and `tailwind - merge` usage here to be safe.
 
 
-export function Navbar() {
+interface NavbarProps {
+    user?: any
+}
+
+export function Navbar({ user }: NavbarProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -86,18 +91,24 @@ export function Navbar() {
                         <Search className="w-5 h-5" />
                     </button>
                     <div className="h-6 w-px bg-border/60"></div>
-                    <Link
-                        href="/login"
-                        className="text-muted-foreground hover:text-foreground font-medium px-3 py-2 transition-colors"
-                    >
-                        Log in
-                    </Link>
-                    <Link
-                        href="/signup"
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full font-medium transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
-                    >
-                        Sign Up
-                    </Link>
+                    {user ? (
+                        <ProfileMenu user={user} />
+                    ) : (
+                        <>
+                            <Link
+                                href="/login"
+                                className="text-muted-foreground hover:text-foreground font-medium px-3 py-2 transition-colors"
+                            >
+                                Log in
+                            </Link>
+                            <Link
+                                href="/signup"
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-full font-medium transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                            >
+                                Sign Up
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -108,8 +119,17 @@ export function Navbar() {
                     <Link href="/categories" className="text-foreground font-medium py-2">Categories</Link>
                     <Link href="/trending" className="text-foreground font-medium py-2">Trending</Link>
                     <hr className="border-border" />
-                    <Link href="/login" className="text-foreground font-medium py-2">Log in</Link>
-                    <Link href="/signup" className="text-primary font-bold py-2">Sign Up</Link>
+                    {user ? (
+                        <div className="flex justify-between items-center py-2">
+                            <span className="font-medium">Account</span>
+                            <ProfileMenu user={user} />
+                        </div>
+                    ) : (
+                        <>
+                            <Link href="/login" className="text-foreground font-medium py-2">Log in</Link>
+                            <Link href="/signup" className="text-primary font-bold py-2">Sign Up</Link>
+                        </>
+                    )}
                 </div>
             )}
         </header>
