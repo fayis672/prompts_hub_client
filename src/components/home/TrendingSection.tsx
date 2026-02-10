@@ -53,7 +53,7 @@ const TRENDING_PROMPTS = [
 
 export function TrendingSection() {
     return (
-        <section className="py-20 container mx-auto px-4 md:px-6">
+        <section className="py-20">
             <div className="flex items-center justify-between mb-10">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-rose-500/10 rounded-full">

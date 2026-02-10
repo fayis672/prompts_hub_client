@@ -15,7 +15,7 @@ export function Hero() {
                 <div className="absolute bottom-[10%] right-[-5%] w-[30%] h-[30%] bg-secondary/20 rounded-full blur-[80px]" />
             </div>
 
-            <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center text-center">
+            <div className="relative z-10 flex flex-col items-center text-center">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -54,39 +54,6 @@ export function Hero() {
                     A community-driven platform for creators to find, test, and share high-quality prompts for ChatGPT, Midjourney, Stable Diffusion, and more.
                 </motion.p>
 
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                    className={`relative w-full max-w-2xl transition-all duration-300 ${searchFocused ? "scale-105 shadow-2xl ring-4 ring-primary/20 rounded-2xl" : "shadow-lg"
-                        }`}
-                >
-                    <div className="relative flex items-center bg-card rounded-2xl overflow-hidden border border-border">
-                        <Search className="absolute left-4 w-6 h-6 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Search for amazing prompts..."
-                            className="w-full h-16 pl-14 pr-32 text-lg bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/70"
-                            onFocus={() => setSearchFocused(true)}
-                            onBlur={() => setSearchFocused(false)}
-                        />
-                        <button className="absolute right-2 top-2 bottom-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6 rounded-xl transition-colors">
-                            Search
-                        </button>
-                    </div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6, duration: 0.5 }}
-                    className="mt-8 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground"
-                >
-                    <span>Popular:</span>
-                    <span className="bg-muted px-2 py-1 rounded-md cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors">Digital Art</span>
-                    <span className="bg-muted px-2 py-1 rounded-md cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors">Copywriting</span>
-                    <span className="bg-muted px-2 py-1 rounded-md cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors">Code Assistants</span>
-                </motion.div>
             </div>
         </section>
     );

@@ -81,7 +81,7 @@ export function FeaturedCarousel() {
 
     return (
         <section className="py-12 bg-muted/30">
-            <div className="container mx-auto px-4 md:px-6">
+            <div className="px-4 md:px-0">
                 <div className="flex justify-between items-end mb-8">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight mb-2">Featured Prompts</h2>

@@ -10,7 +10,7 @@ const POPULAR_TAGS = [
 
 export function TagCloud() {
     return (
-        <section className="py-16 container mx-auto px-4 md:px-6 border-b border-border">
+        <section className="py-16 border-b border-border">
             <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="md:w-1/3">
                     <h2 className="text-3xl font-bold tracking-tight mb-4">Popular Tags</h2>

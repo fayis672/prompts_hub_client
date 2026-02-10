@@ -75,7 +75,7 @@ const RECENT_PROMPTS = [
 
 export function RecentFeed() {
     return (
-        <section className="py-20 container mx-auto px-4 md:px-6">
+        <section className="py-20">
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight mb-2">Recent Prompts</h2>
