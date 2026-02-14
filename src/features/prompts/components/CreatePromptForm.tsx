@@ -10,11 +10,19 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
 import { FormProvider, useForm, Controller } from 'react-hook-form'
+import { Category } from '@/lib/api/categories'
+import { uploadFile } from '@/lib/api/files'
+import { createPrompt } from '@/lib/api/prompts'
+import { createClient } from '@/lib/supabase/client'
 import { OutputManager } from './OutputManager'
 import { PromptEditor } from './PromptEditor'
 import { VariableManager } from './VariableManager' // Ensure this export exists (it does)
 
-export function CreatePromptForm() {
+interface CreatePromptFormProps {
+    categories: Category[]
+}
+
+export function CreatePromptForm({ categories }: CreatePromptFormProps) {
     const methods = useForm<CreatePromptInput>({
         resolver: zodResolver(CreatePromptSchema),
         defaultValues: {
@@ -31,10 +39,61 @@ export function CreatePromptForm() {
         },
     })
 
-    const onSubmit = (data: CreatePromptInput) => {
-        console.log('Form Data:', data)
-        // Here we would call the mutation to save data
-        alert('Form submitted! Check console for data.')
+    const onSubmit = async (data: CreatePromptInput) => {
+        try {
+            // Get current session token
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session?.access_token) {
+                alert('You must be logged in to create a prompt')
+                return
+            }
+
+            const token = session.access_token
+
+            // Handle file uploads for outputs
+            const updatedOutputs = await Promise.all(
+                data.prompt_outputs.map(async (output) => {
+                    if (output.file) {
+                        try {
+                            const formData = new FormData()
+                            formData.append('file', output.file)
+
+                            console.log('Uploading file for output:', output.title)
+                            const fileUrl = await uploadFile(formData)
+                            console.log('File uploaded, URL:', fileUrl)
+
+                            return {
+                                ...output,
+                                output_url: fileUrl,
+                                file: undefined, // Remove file object before sending to API
+                            }
+                        } catch (error) {
+                            console.error('File upload failed for output:', output.title, error)
+                            throw new Error(`File upload failed for ${output.title}`)
+                        }
+                    }
+                    return output
+                })
+            )
+
+            const finalData = {
+                ...data,
+                prompt_outputs: updatedOutputs,
+            }
+
+            console.log('Submitting Prompt Data:', finalData)
+
+            await createPrompt(finalData, token)
+
+            alert('Prompt created successfully!')
+            // Redirect or reset form here
+            // router.push(`/prompts/${newPrompt.slug}`)
+        } catch (error) {
+            console.error('Failed to create prompt:', error)
+            alert('Failed to create prompt. Please try again.')
+        }
     }
 
     return (
@@ -120,7 +179,6 @@ export function CreatePromptForm() {
 
                             <div className="space-y-6">
                                 <Label>Category</Label>
-                                {/* In a real app, this would be a dynamic select fetching categories */}
                                 <Controller
                                     control={methods.control}
                                     name="category_id"
@@ -130,9 +188,11 @@ export function CreatePromptForm() {
                                                 <SelectValue placeholder="Select Category" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="3fa85f64-5717-4562-b3fc-2c963f66afa6">Writing</SelectItem>
-                                                <SelectItem value="coding">Coding</SelectItem>
-                                                <SelectItem value="marketing">Marketing</SelectItem>
+                                                {categories.map((category) => (
+                                                    <SelectItem key={category.id} value={category.id}>
+                                                        {category.name}
+                                                    </SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     )}
@@ -179,10 +239,79 @@ export function CreatePromptForm() {
                                 />
                             </div>
 
-                            {/* Tags placeholder - simpler implementation for now */}
+                            {/* Tags */}
                             <div className="space-y-6">
                                 <Label>Tags</Label>
-                                <Input placeholder="Add tags (comma separated)..." />
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                    {methods.watch('tags').map((tag, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
+                                        >
+                                            <span>{tag}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const currentTags = methods.getValues('tags')
+                                                    methods.setValue(
+                                                        'tags',
+                                                        currentTags.filter((_, i) => i !== index)
+                                                    )
+                                                }}
+                                                className="ml-2 hover:text-destructive focus:outline-none"
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Input
+                                    placeholder="Add tags (comma separated)..."
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ',') {
+                                            e.preventDefault()
+                                            const input = e.currentTarget
+                                            const value = input.value.trim()
+
+                                            if (value) {
+                                                const currentTags = methods.getValues('tags')
+                                                if (!currentTags.includes(value)) {
+                                                    methods.setValue('tags', [...currentTags, value])
+                                                }
+                                                input.value = ''
+                                            }
+                                        }
+                                    }}
+                                    onChange={(e) => {
+                                        const value = e.target.value
+                                        if (value.includes(',')) {
+                                            const parts = value.split(',')
+                                            // Handle multiple tags pasted or typed
+                                            const newTags = parts
+                                                .map((t) => t.trim())
+                                                .filter((t) => t.length > 0)
+
+                                            // The last part might be an incomplete tag if the user just typed a comma
+                                            // But if they pasted "tag1, tag2", we want both.
+                                            // Simplest approach: take all complete parts before the last comma
+                                            // If the user types "foo,", parts is ["foo", ""]
+
+                                            // Better approach for onChange:
+                                            // If key wasn't comma (handled by onKeyDown), check if current value has comma
+                                            // This handles paste
+                                            if (parts.length > 1) {
+                                                const currentTags = methods.getValues('tags')
+                                                const tagsToAdd = newTags.filter(tag => !currentTags.includes(tag))
+                                                if (tagsToAdd.length > 0) {
+                                                    methods.setValue('tags', [...currentTags, ...tagsToAdd])
+                                                }
+                                                // Reset input to empty or the last partial chunk if desired. 
+                                                // For now, clearing is safest for "comma triggers add" behavior
+                                                e.target.value = ''
+                                            }
+                                        }
+                                    }}
+                                />
                             </div>
                         </div>
                     </div>

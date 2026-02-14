@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Logo } from "@/components/common/Logo";
 import { usePathname } from "next/navigation";
 import {
     Home,
@@ -49,14 +50,8 @@ export function Sidebar() {
         <aside className="w-64 hidden lg:flex flex-col border-r border-border bg-card/40 backdrop-blur-md sticky top-0 h-screen overflow-y-auto print:hidden z-50">
             <div className="p-6 flex flex-col gap-10">
                 {/* Logo Integration */}
-                <Link href="/" className="flex items-center gap-2 group px-3 mt-2">
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl group-hover:scale-105 transition-transform shadow-lg shadow-primary/20">
-                        P
-                    </div>
-                    <span className="text-xl font-bold tracking-tight text-foreground">
-                        Prompts<span className="text-primary">Hub</span>
-                    </span>
-                </Link>
+                {/* Logo Integration */}
+                <Logo className="px-3 mt-2" />
 
                 <div>
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-3">

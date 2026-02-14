@@ -21,6 +21,7 @@ export const PromptOutputSchema = z.object({
     variable_values: z.record(z.string(), z.any()).optional(),
     display_order: z.number(),
     is_approved: z.boolean(),
+    file: z.any().optional(), // Temporary field for file upload
 })
 
 export type PromptOutput = z.infer<typeof PromptOutputSchema>

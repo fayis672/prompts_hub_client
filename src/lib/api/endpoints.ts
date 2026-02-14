@@ -5,4 +5,14 @@ export const API_ENDPOINTS = {
         ME: '/api/v1/users/me',
         UPDATE: '/api/v1/users/me',
     },
+    CATEGORIES: {
+        LIST: '/api/v1/categories/',
+    },
+    PROMPTS: {
+        CREATE: '/api/v1/prompts/',
+        RECOMMENDATIONS: '/api/v1/prompts/recommendations/prompts',
+    },
+    FILES: {
+        UPLOAD: '/api/v1/files/upload',
+    },
 } as const

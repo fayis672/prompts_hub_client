@@ -9,7 +9,7 @@ import { Plus, Trash2, Upload } from 'lucide-react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
 export function OutputManager() {
-    const { control, register } = useFormContext<{ prompt_outputs: PromptOutput[] }>()
+    const { control, register, setValue, watch } = useFormContext<{ prompt_outputs: PromptOutput[] }>()
     const { fields, append, remove } = useFieldArray({
         control,
         name: 'prompt_outputs',
@@ -80,9 +80,26 @@ export function OutputManager() {
                                             <br />
                                             Drag & drop or click to upload
                                         </div>
-                                        <Button type="button" variant="secondary" size="sm">
-                                            Select File
-                                        </Button>
+                                        <div className="relative">
+                                            <Button type="button" variant="secondary" size="sm" className="relative z-0">
+                                                Select File
+                                            </Button>
+                                            <input
+                                                type="file"
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        setValue(`prompt_outputs.${index}.file`, file);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        {watch(`prompt_outputs.${index}.file`) && (
+                                            <div className="text-xs text-primary font-medium mt-2">
+                                                Selected: {(watch(`prompt_outputs.${index}.file`) as File).name}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

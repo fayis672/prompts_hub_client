@@ -1,6 +1,8 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { Logo } from "@/components/common/Logo";
 import { Search, Menu, Plus, Bell } from "lucide-react"; // Assuming lucide-react is installed
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils"; // Assuming a utility for class merging exists or I will create one inline if needed.
@@ -24,6 +26,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ user }: NavbarProps) {
+    const pathname = usePathname();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -46,14 +49,8 @@ export function Navbar({ user }: NavbarProps) {
         >
             <div className="px-4 md:px-8 w-full flex items-center justify-between">
                 {/* Logo - Hidden on desktop as it's in Sidebar */}
-                <Link href="/" className="flex lg:hidden items-center gap-2 group">
-                    <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl group-hover:scale-105 transition-transform">
-                        P
-                    </div>
-                    <span className="text-xl font-bold tracking-tight text-foreground">
-                        Prompts<span className="text-primary">Hub</span>
-                    </span>
-                </Link>
+                {/* Logo - Hidden on desktop as it's in Sidebar */}
+                <Logo className="lg:hidden" />
 
 
 
@@ -86,13 +83,15 @@ export function Navbar({ user }: NavbarProps) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-3 ml-auto md:ml-0">
-                    <Link
-                        href="/prompts/create"
-                        className="hidden lg:flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create Prompt
-                    </Link>
+                    {pathname !== "/prompts/create" && (
+                        <Link
+                            href={user ? "/prompts/create" : "/login?next=/prompts/create"}
+                            className="hidden lg:flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Create Prompt
+                        </Link>
+                    )}
 
                     {/* Notifications */}
                     <button className="relative p-2.5 text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-xl transition-all group">
@@ -141,10 +140,12 @@ export function Navbar({ user }: NavbarProps) {
                     </div>
                     <hr className="border-border" />
                     <div className="flex flex-col gap-2">
-                        <Link href="/prompts/create" className="bg-primary text-primary-foreground text-center font-bold py-3 rounded-xl flex items-center justify-center gap-2 mb-2">
-                            <Plus className="w-5 h-5" />
-                            Create Prompt
-                        </Link>
+                        {pathname !== "/prompts/create" && (
+                            <Link href={user ? "/prompts/create" : "/login?next=/prompts/create"} className="bg-primary text-primary-foreground text-center font-bold py-3 rounded-xl flex items-center justify-center gap-2 mb-2">
+                                <Plus className="w-5 h-5" />
+                                Create Prompt
+                            </Link>
+                        )}
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Discover</p>
                         <Link href="/top-rated" className="text-foreground font-medium py-2 px-2 hover:bg-accent rounded-md">Top Rated</Link>
                         <Link href="/most-liked" className="text-foreground font-medium py-2 px-2 hover:bg-accent rounded-md">Most Liked</Link>

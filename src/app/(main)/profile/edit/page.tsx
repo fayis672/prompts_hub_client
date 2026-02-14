@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/api/users'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { ProfileEditForm } from '@/app/profile/edit/ProfileEditForm'
+import { ProfileEditForm } from './ProfileEditForm'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 
