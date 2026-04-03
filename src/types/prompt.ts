@@ -14,7 +14,7 @@ export const VariableSchema = z.object({
 export type Variable = z.infer<typeof VariableSchema>
 
 export const PromptOutputSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
+    title: z.string().min(1, 'Output title is required'),
     output_text: z.string().optional(),
     output_url: z.string().optional(),
     output_type: z.enum(['text', 'image', 'file']),
@@ -22,6 +22,21 @@ export const PromptOutputSchema = z.object({
     display_order: z.number(),
     is_approved: z.boolean(),
     file: z.any().optional(), // Temporary field for file upload
+}).superRefine((data, ctx) => {
+    if (data.output_type === 'text' && (!data.output_text || data.output_text.trim().length === 0)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Output text is required for text outputs',
+            path: ['output_text'],
+        })
+    }
+    if ((data.output_type === 'image' || data.output_type === 'file') && !data.file && !data.output_url) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Please attach a${data.output_type === 'image' ? 'n image' : ' file'} for this output`,
+            path: ['file'],
+        })
+    }
 })
 
 export type PromptOutput = z.infer<typeof PromptOutputSchema>
@@ -34,7 +49,7 @@ export const CreatePromptSchema = z.object({
         .min(10, 'Prompt text must be at least 10 characters')
         .or(z.string().length(0)), // Allow empty initially for form logic if needed, but validation should catch it
     prompt_type: z.enum(['text_generation', 'image_generation']),
-    category_id: z.string().uuid('Invalid category ID'),
+    category_id: z.string().uuid('Please select a valid category'),
     privacy_status: z.enum(['public', 'private', 'unlisted']),
     status: z.enum(['draft', 'published', 'archived']),
     slug: z.string().optional(), // Can be generated on backend or frontend

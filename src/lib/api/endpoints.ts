@@ -10,9 +10,15 @@ export const API_ENDPOINTS = {
     },
     PROMPTS: {
         CREATE: '/api/v1/prompts/',
+        LIST: '/api/v1/prompts/',
+        TRENDING: '/api/v1/prompts/trending',
         RECOMMENDATIONS: '/api/v1/prompts/recommendations/prompts',
     },
     FILES: {
         UPLOAD: '/api/v1/files/upload',
+    },
+    TAGS: {
+        LIST: '/api/v1/tags/',
+        CREATE: '/api/v1/tags/',
     },
 } as const

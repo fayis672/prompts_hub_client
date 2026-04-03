@@ -30,7 +30,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -68,6 +71,10 @@
   --border: oklch(0.90 0.02 150);
   --input: oklch(0.90 0.02 150);
   --ring: oklch(0.55 0.18 145);
+
+  /* Destructive / Error red */
+  --destructive: oklch(0.55 0.22 27);
+  --destructive-foreground: oklch(1 0 0);
 }
 
 .dark {
@@ -96,6 +103,10 @@
   --border: oklch(0.25 0.03 150);
   --input: oklch(0.25 0.03 150);
   --ring: oklch(0.60 0.18 145);
+
+  /* Destructive / Error red */
+  --destructive: oklch(0.60 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
 }
 
 @layer base {

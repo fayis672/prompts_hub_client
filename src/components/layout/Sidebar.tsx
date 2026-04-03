@@ -19,7 +19,6 @@ import {
     Database,
     Monitor,
     PenTool,
-    Trophy,
     History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,6 @@ const MENU_ITEMS = [
     { name: "Most Liked", icon: Heart, href: "/most-liked" },
     { name: "New Arrivals", icon: Clock, href: "/new" },
     { name: "Popular", icon: Zap, href: "/popular" },
-    { name: "Leaderboard", icon: Trophy, href: "/leaderboard" },
 ];
 
 const CATEGORIES = [

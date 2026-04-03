@@ -39,6 +39,8 @@ export interface PromptRecommendation {
     }[];
 }
 
+export type SortOrder = 'new' | 'most_liked' | 'most_viewed' | 'most_bookmarked';
+
 export async function getRecommendedPrompts(limit: number = 10, token?: string): Promise<PromptRecommendation[]> {
     const headers: HeadersInit = {
         ...API_CONFIG.HEADERS,
@@ -51,13 +53,64 @@ export async function getRecommendedPrompts(limit: number = 10, token?: string):
     const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.RECOMMENDATIONS}?limit=${limit}`, {
         method: 'GET',
         headers: headers,
-        next: { revalidate: 60 } // Cache for 60 seconds
+        cache: 'no-store' // Ensure personalized recommendations are never cached
     });
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }));
         console.error('Get Recommended Prompts API Error:', errorData);
         throw new Error(errorData.detail || 'Failed to fetch recommended prompts');
+    }
+
+    return await response.json();
+}
+
+export async function getTrendingPrompts(limit: number = 20): Promise<PromptRecommendation[]> {
+    const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.TRENDING}?limit=${limit}`,
+        {
+            method: 'GET',
+            headers: API_CONFIG.HEADERS,
+            cache: 'no-store',
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        console.error('Get Trending Prompts API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch trending prompts');
+    }
+
+    return await response.json();
+}
+
+export async function getPrompts(params: {
+    sort?: SortOrder;
+    limit?: number;
+    skip?: number;
+    category_id?: string;
+} = {}): Promise<PromptRecommendation[]> {
+    const { sort = 'new', limit = 20, skip = 0, category_id } = params;
+    const searchParams = new URLSearchParams({
+        sort,
+        limit: String(limit),
+        skip: String(skip),
+    });
+    if (category_id) searchParams.set('category_id', category_id);
+
+    const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.LIST}?${searchParams.toString()}`,
+        {
+            method: 'GET',
+            headers: API_CONFIG.HEADERS,
+            cache: 'no-store',
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        console.error('Get Prompts API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch prompts');
     }
 
     return await response.json();

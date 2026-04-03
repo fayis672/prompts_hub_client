@@ -1,6 +1,7 @@
 "use client";
 
-import { Heart, Eye, Sparkles, Copy } from "lucide-react";
+import { useState } from "react";
+import { Heart, Eye, Sparkles, Copy, ImageIcon } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { motion } from "framer-motion";
 
@@ -20,6 +21,8 @@ interface PromptCardProps {
 }
 
 export function PromptCard({ title, description, author, tags, likes, views, type, image, rating }: PromptCardProps) {
+    const [imageError, setImageError] = useState(false);
+
     return (
         <motion.div
             whileHover={{ y: -5 }}
@@ -28,11 +31,16 @@ export function PromptCard({ title, description, author, tags, likes, views, typ
         >
             {/* Header / Image Area */}
             <div className="relative h-40 bg-muted/50 overflow-hidden">
-                {image ? (
-                    <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${image})` }} />
+                {image && !imageError ? (
+                    <img 
+                        src={image} 
+                        alt={title}
+                        onError={() => setImageError(true)}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10 group-hover:from-primary/10 group-hover:to-secondary/20 transition-all">
-                        <Sparkles className="w-10 h-10 text-primary/30" />
+                        {type === "Image" ? <ImageIcon className="w-10 h-10 text-primary/30" /> : <Sparkles className="w-10 h-10 text-primary/30" />}
                     </div>
                 )}
                 <div className="absolute top-3 right-3 flex gap-2">

@@ -1,10 +1,17 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Routes that DO NOT require authentication
+const PUBLIC_ROUTES = ['/login', '/signup', '/auth', '/create-profile']
+
+// Routes that REQUIRE authentication (prefix match)
+const PROTECTED_PREFIXES = [
+    '/prompts/create',
+    '/profile/edit',
+]
+
 export async function updateSession(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({
-        request,
-    })
+    let supabaseResponse = NextResponse.next({ request })
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,12 +22,9 @@ export async function updateSession(request: NextRequest) {
                     return request.cookies.getAll()
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) =>
+                    cookiesToSet.forEach(({ name, value }) =>
                         request.cookies.set(name, value)
                     )
-                    supabaseResponse = NextResponse.next({
-                        request,
-                    })
                     cookiesToSet.forEach(({ name, value, options }) =>
                         supabaseResponse.cookies.set(name, value, options)
                     )
@@ -29,35 +33,42 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // IMPORTANT: Avoid writing any logic between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
-
+    // IMPORTANT: Do NOT add logic between createServerClient and getUser().
+    // Mistakes here can cause users to be randomly logged out.
     const {
         data: { user },
+        error,
     } = await supabase.auth.getUser()
 
-    if (
-        !user &&
-        !request.nextUrl.pathname.startsWith('/login') &&
-        !request.nextUrl.pathname.startsWith('/auth')
-    ) {
-        // Protect /prompts/create and other auth-required routes
-        if (request.nextUrl.pathname.startsWith('/prompts/create')) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/login'
-            url.searchParams.set('next', request.nextUrl.pathname)
-            return NextResponse.redirect(url)
-        }
+    if (error && error.message !== 'Auth session missing!') {
+        console.error('[Middleware] Supabase getUser error:', error.message)
     }
 
-    // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
-    // creating a new Response object with NextResponse.next() make sure to:
-    // 1. Pass the request in it, like so:
-    //    const myNewResponse = NextResponse.next({ request })
-    // 2. Copy over the cookies, like so:
-    //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-    // 3. Change the myNewResponse object to fit your needs, but avoid changing
-    //    the cookies!
+    const pathname = request.nextUrl.pathname
+
+    // Check if this is a protected route and user is not authenticated
+    const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+        pathname.startsWith(prefix)
+    )
+
+    const isPublic = PUBLIC_ROUTES.some((route) =>
+        pathname.startsWith(route)
+    )
+
+    if (!user && isProtected) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        url.searchParams.set('next', pathname)
+        return NextResponse.redirect(url)
+    }
+
+    // If already logged in and trying to visit login/signup, redirect to home
+    if (user && isPublic && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+    }
+
+    // IMPORTANT: Must return supabaseResponse as-is to preserve cookie state.
     return supabaseResponse
 }
