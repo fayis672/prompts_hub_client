@@ -60,8 +60,10 @@ export function NewArrivalsSection() {
                         return (
                             <PromptCard
                                 key={prompt.id}
+                                id={prompt.id}
                                 title={prompt.title}
                                 description={prompt.description}
+                                promptText={prompt.prompt_text}
                                 author={{ name: "Creator", avatar: "C" }}
                                 tags={[]}
                                 likes={prompt.bookmark_count + prompt.rating_count}

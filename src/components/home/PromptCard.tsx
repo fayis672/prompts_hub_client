@@ -1,13 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Eye, Sparkles, Copy, ImageIcon } from "lucide-react";
+import { Heart, Eye, Sparkles, Copy, ImageIcon, Play, Bot, BrainCircuit, Sparkle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { motion } from "framer-motion";
+import Link from "next/link";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PromptCardProps {
+    id?: string;
     title: string;
     description: string;
+    promptText: string;
     author: {
         name: string;
         avatar: string;
@@ -20,14 +31,43 @@ interface PromptCardProps {
     rating?: number;
 }
 
-export function PromptCard({ title, description, author, tags, likes, views, type, image, rating }: PromptCardProps) {
+export function PromptCard({ id, title, description, promptText, author, tags, likes, views, type, image, rating }: PromptCardProps) {
     const [imageError, setImageError] = useState(false);
 
-    return (
+    const handleRunInAI = (e: React.MouseEvent, aiType: 'chatgpt' | 'claude' | 'gemini') => {
+        e.preventDefault();
+        e.stopPropagation();
+        const encodedPrompt = encodeURIComponent(promptText);
+        let url = '';
+        
+        switch(aiType) {
+            case 'chatgpt':
+                url = `https://chatgpt.com/?q=${encodedPrompt}`;
+                break;
+            case 'claude':
+                url = `https://claude.ai/new?q=${encodedPrompt}`;
+                break;
+            case 'gemini':
+                url = `https://gemini.google.com/app?q=${encodedPrompt}`;
+                break;
+        }
+        
+        if (url) {
+            window.open(url, '_blank');
+        }
+    };
+
+    const handleCopy = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.writeText(promptText);
+    };
+
+    const cardContent = (
         <motion.div
             whileHover={{ y: -5 }}
             transition={{ duration: 0.2 }}
-            className="group relative bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full"
+            className="group relative bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full cursor-pointer"
         >
             {/* Header / Image Area */}
             <div className="relative h-40 bg-muted/50 overflow-hidden">
@@ -76,19 +116,59 @@ export function PromptCard({ title, description, author, tags, likes, views, typ
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                     <div className="flex gap-3 text-muted-foreground">
-                        <button className="flex items-center gap-1 text-xs hover:text-red-500 transition-colors">
+                        <button className="flex items-center gap-1 text-xs hover:text-red-500 transition-colors" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                             <Heart className="w-4 h-4" /> <span>{likes}</span>
                         </button>
                         <div className="flex items-center gap-1 text-xs">
-                            <Eye className="w-4 h-4" /> <span>{views} k</span>
+                            <Eye className="w-4 h-4" /> <span>{views >= 1000 ? (views/1000).toFixed(1) + 'k' : views}</span>
                         </div>
                     </div>
 
-                    <button className="text-primary hover:text-primary/80 transition-colors p-1.5 rounded-full hover:bg-primary/10">
-                        <Copy className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-border bg-card hover:bg-primary/10 hover:text-primary transition-colors text-xs font-medium" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                                    <Play className="w-3.5 h-3.5" />
+                                    <span>Run</span>
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuLabel>Run Prompt In...</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={(e) => handleRunInAI(e as any, 'chatgpt')} className="cursor-pointer gap-2">
+                                    <Bot className="w-4 h-4" />
+                                    <span>ChatGPT</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => handleRunInAI(e as any, 'claude')} className="cursor-pointer gap-2">
+                                    <BrainCircuit className="w-4 h-4" />
+                                    <span>Claude</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => handleRunInAI(e as any, 'gemini')} className="cursor-pointer gap-2">
+                                    <Sparkle className="w-4 h-4" />
+                                    <span>Google Gemini</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <button 
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-accent"
+                            onClick={handleCopy}
+                        >
+                            <Copy className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </motion.div>
     );
+
+    if (id) {
+        return (
+            <Link href={`/prompts/${id}`} className="block h-full">
+                {cardContent}
+            </Link>
+        );
+    }
+
+    return cardContent;
 }

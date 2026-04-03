@@ -140,3 +140,63 @@ export async function createPrompt(promptData: CreatePromptInput, token: string)
     }
 }
 
+export async function getPromptById(id: string): Promise<PromptRecommendation> {
+    const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.BY_ID(id)}`,
+        {
+            method: 'GET',
+            headers: API_CONFIG.HEADERS,
+            cache: 'no-store',
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        console.error('Get Prompt By ID API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to fetch prompt details');
+    }
+
+    return await response.json();
+}
+
+export async function likePrompt(id: string, token: string): Promise<any> {
+    const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.LIKE(id)}`,
+        {
+            method: 'POST',
+            headers: {
+                ...API_CONFIG.HEADERS,
+                'Authorization': `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        console.error('Like Prompt API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to like prompt');
+    }
+
+    return await response.json();
+}
+
+export async function unlikePrompt(id: string, token: string): Promise<any> {
+    const response = await fetch(
+        `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.LIKE(id)}`,
+        {
+            method: 'DELETE',
+            headers: {
+                ...API_CONFIG.HEADERS,
+                'Authorization': `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+        console.error('Unlike Prompt API Error:', errorData);
+        throw new Error(errorData.detail || 'Failed to unlike prompt');
+    }
+
+    return await response.json();
+}
