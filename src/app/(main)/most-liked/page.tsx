@@ -5,6 +5,7 @@ import { PromptCard } from "@/components/home/PromptCard";
 import { Heart } from "lucide-react";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function MostLikedPage() {
     const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
@@ -42,7 +43,12 @@ export default function MostLikedPage() {
             ) : error ? (
                 <div className="py-20 text-center text-destructive">{error}</div>
             ) : prompts.length === 0 ? (
-                <div className="py-20 text-center text-muted-foreground">No prompts found yet.</div>
+                <div className="py-20">
+                    <EmptyState 
+                        title="No Prompts Found" 
+                        description="There are no highly liked prompts yet. Browse and like some to see them here!"
+                    />
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {prompts.map(prompt => {

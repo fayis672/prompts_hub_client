@@ -6,6 +6,7 @@ import { ArrowRight, Flame } from "lucide-react";
 import Link from "next/link";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export function TrendingSection() {
     const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
@@ -53,7 +54,12 @@ export function TrendingSection() {
             ) : error ? (
                 <div className="py-16 text-center text-destructive">{error}</div>
             ) : prompts.length === 0 ? (
-                <div className="py-16 text-center text-muted-foreground">No trending prompts right now. Check back soon!</div>
+                <div className="py-10">
+                    <EmptyState 
+                        title="No Trending Prompts" 
+                        description="There are no trending prompts right now. Check back later or start a new trend yourself!"
+                    />
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {prompts.map(prompt => {

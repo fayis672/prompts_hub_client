@@ -6,6 +6,7 @@ import { ListFilter, Grid as GridIcon, List as ListIcon, Sparkles, Layers } from
 import { getRecommendedPrompts, getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { getCategories, Category } from "@/lib/api/categories";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -146,7 +147,12 @@ export function RecentFeed() {
             {error ? (
                 <div className="py-20 text-center text-destructive">{error}</div>
             ) : prompts.length === 0 ? (
-                <div className="py-20 text-center text-muted-foreground">No prompts found matching this category.</div>
+                <div className="py-10">
+                    <EmptyState 
+                        title="No Prompts Found" 
+                        description="We couldn't find any prompts matching your criteria. Try adjusting your filters or be the first to create one!"
+                    />
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {prompts.map(prompt => {

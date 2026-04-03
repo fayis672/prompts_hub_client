@@ -5,6 +5,7 @@ import { PromptCard } from "@/components/home/PromptCard";
 import { Trophy } from "lucide-react";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function LeaderboardPage() {
     const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
@@ -42,7 +43,12 @@ export default function LeaderboardPage() {
             ) : error ? (
                 <div className="py-20 text-center text-destructive">{error}</div>
             ) : prompts.length === 0 ? (
-                <div className="py-20 text-center text-muted-foreground">No data yet.</div>
+                <div className="py-20">
+                    <EmptyState 
+                        title="Leaderboard Empty" 
+                        description="There is no data yet to display on the leaderboard. Bookmark prompts to elevate them!"
+                    />
+                </div>
             ) : (
                 <div className="flex flex-col gap-4">
                     {prompts.map((prompt, index) => {

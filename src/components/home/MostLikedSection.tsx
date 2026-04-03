@@ -6,6 +6,7 @@ import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export function MostLikedSection() {
     const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
@@ -52,7 +53,12 @@ export function MostLikedSection() {
             ) : error ? (
                 <div className="py-16 text-center text-destructive">{error}</div>
             ) : prompts.length === 0 ? (
-                <div className="py-16 text-center text-muted-foreground">No prompts found. Be the first to create one!</div>
+                <div className="py-10">
+                    <EmptyState 
+                        title="No Liked Prompts" 
+                        description="There aren't any highly liked prompts yet. Browse around and be the first to like some!"
+                    />
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {prompts.map(prompt => {

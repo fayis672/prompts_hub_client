@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export function NewArrivalsSection() {
     const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);

@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getPromptById, likePrompt, unlikePrompt, PromptRecommendation } from "@/lib/api/prompts";
 import { getCommentsByPromptId, createComment, Comment } from "@/lib/api/comments";
+import { getCategories, Category } from "@/lib/api/categories";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Heart, Eye, Copy, ArrowLeft, Send, Sparkles, ImageIcon, MessageSquare, Play, Bot, BrainCircuit, Sparkle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { motion } from "framer-motion";
@@ -24,6 +26,7 @@ export default function PromptDetailsPage() {
     const prompt_id = params.prompt_id as string;
 
     const [prompt, setPrompt] = useState<PromptRecommendation | null>(null);
+    const [categoryName, setCategoryName] = useState<string | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -40,6 +43,17 @@ export default function PromptDetailsPage() {
                 const data = await getPromptById(prompt_id);
                 setPrompt(data);
                 
+                // Fetch category
+                if (data.category_id) {
+                    try {
+                        const categories = await getCategories();
+                        const foundCategory = categories.find((c: Category) => c.id === data.category_id);
+                        if (foundCategory) setCategoryName(foundCategory.name);
+                    } catch (catErr) {
+                        console.error("Failed to fetch category", catErr);
+                    }
+                }
+
                 // Fetch comments
                 try {
                     const commentsData = await getCommentsByPromptId(prompt_id);
@@ -208,9 +222,8 @@ export default function PromptDetailsPage() {
                     {/* Tags */}
                     {prompt.category_id && (
                         <div className="flex flex-wrap gap-2 mb-8">
-                            {/* Wait, the API returns category_id, not tag strings, but tags can be added later */}
                             <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
-                                Category: {prompt.category_id}
+                                Category: {categoryName || "Loading..."}
                             </Badge>
                         </div>
                     )}
@@ -323,7 +336,12 @@ export default function PromptDetailsPage() {
                 {/* Comments List */}
                 <div className="space-y-6">
                     {comments.length === 0 ? (
-                        <p className="text-center text-muted-foreground py-8">No comments yet. Be the first to start the discussion!</p>
+                        <div className="py-4">
+                            <EmptyState 
+                                title="No Comments" 
+                                description="No comments yet. Be the first to start the discussion!"
+                            />
+                        </div>
                     ) : (
                         comments.map((comment) => (
                             <div key={comment.id} className="flex gap-4">
