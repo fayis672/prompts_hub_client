@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PromptCard } from "@/components/home/PromptCard";
 import { Zap } from "lucide-react";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
@@ -8,23 +8,13 @@ import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function PopularPage() {
-    const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: prompts = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['popular-page'],
+        queryFn: () => getPrompts({ sort: "most_viewed", limit: 20 }),
+        staleTime: 5 * 60 * 1000, 
+    });
 
-    useEffect(() => {
-        const fetchPrompts = async () => {
-            try {
-                const data = await getPrompts({ sort: "most_viewed", limit: 20 });
-                setPrompts(data);
-            } catch (err: any) {
-                setError(err?.message || "Failed to load popular prompts.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPrompts();
-    }, []);
+    const error = queryError ? (queryError as Error).message || "Failed to load popular prompts." : null;
 
     return (
         <div className="container mx-auto px-4 min-h-screen py-8">
@@ -50,7 +40,7 @@ export default function PopularPage() {
                     />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {prompts.map(prompt => {
                         const firstImage = prompt.prompt_outputs?.find(o => o.output_type === "image" && o.output_url);
                         return (

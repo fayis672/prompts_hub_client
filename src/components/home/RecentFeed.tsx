@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PromptCard } from "./PromptCard";
 import { ListFilter, Grid as GridIcon, List as ListIcon, Sparkles, Layers } from "lucide-react";
 import { getRecommendedPrompts, getPrompts, PromptRecommendation } from "@/lib/api/prompts";
@@ -11,63 +12,34 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export function RecentFeed() {
-    const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isPersonalized, setIsPersonalized] = useState(false);
     const [supabase] = useState(() => createClient());
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const cats = await getCategories();
-                setCategories(cats);
-            } catch (err) {
-                console.error("Failed to fetch categories:", err);
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: getCategories,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const { data: promptsData, isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['recent-feed', selectedCategory],
+        queryFn: async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            
+            if (selectedCategory === "all") {
+                if (token) return getRecommendedPrompts(10, token);
+                return getPrompts({ sort: "new", limit: 20 });
             }
-        };
-        fetchCategories();
-    }, []);
+            
+            return getPrompts({ category_id: selectedCategory, sort: "new", limit: 20 });
+        },
+        staleTime: 2 * 60 * 1000,
+    });
 
-    useEffect(() => {
-        const fetchPrompts = async () => {
-            setLoading(true);
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                const token = session?.access_token;
-
-                if (selectedCategory === "all") {
-                    if (token) {
-                        // Logged in → personalized recommendations
-                        const data = await getRecommendedPrompts(10, token);
-                        setPrompts(data);
-                        setIsPersonalized(true);
-                    } else {
-                        // Not logged in → fall back to newest prompts
-                        const data = await getPrompts({ sort: "new", limit: 20 });
-                        setPrompts(data);
-                        setIsPersonalized(false);
-                    }
-                } else {
-                    // Specific category selected
-                    const data = await getPrompts({ sort: "new", limit: 20, category_id: selectedCategory });
-                    setPrompts(data);
-                    setIsPersonalized(false); // Category view overrides "For You"
-                }
-
-                setError(null);
-            } catch (err: any) {
-                console.error("Failed to fetch prompts:", err);
-                setError(err?.message || "Failed to load prompts. Please try again later.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPrompts();
-    }, [supabase, selectedCategory]);
+    const isPersonalized = selectedCategory === "all" && promptsData && promptsData.length > 0 && "match_score" in promptsData[0];
+    const prompts = promptsData || [];
+    const error = queryError ? (queryError as Error).message || "Failed to load prompts." : null;
 
     if (loading && prompts.length === 0) {
         return (

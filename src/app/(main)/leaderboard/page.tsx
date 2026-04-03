@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PromptCard } from "@/components/home/PromptCard";
 import { Trophy } from "lucide-react";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
@@ -8,23 +8,13 @@ import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function LeaderboardPage() {
-    const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: prompts = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['leaderboard-page'],
+        queryFn: () => getPrompts({ sort: "most_bookmarked", limit: 20 }),
+        staleTime: 5 * 60 * 1000, 
+    });
 
-    useEffect(() => {
-        const fetchPrompts = async () => {
-            try {
-                const data = await getPrompts({ sort: "most_bookmarked", limit: 20 });
-                setPrompts(data);
-            } catch (err: any) {
-                setError(err?.message || "Failed to load leaderboard.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPrompts();
-    }, []);
+    const error = queryError ? (queryError as Error).message || "Failed to load leaderboard." : null;
 
     return (
         <div className="container mx-auto px-4 min-h-screen py-8">
@@ -50,30 +40,28 @@ export default function LeaderboardPage() {
                     />
                 </div>
             ) : (
-                <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {prompts.map((prompt, index) => {
                         const firstImage = prompt.prompt_outputs?.find(o => o.output_type === "image" && o.output_url);
-                        const rankColors = ["text-yellow-500", "text-slate-400", "text-amber-600"];
+                        const rankBackgrounds = ["bg-yellow-500 text-white", "bg-slate-400 text-white", "bg-amber-600 text-white"];
                         return (
-                            <div key={prompt.id} className="flex items-center gap-4 bg-card border border-border rounded-2xl p-4 hover:shadow-md transition-shadow">
-                                <span className={`text-2xl font-black w-8 text-center ${rankColors[index] ?? "text-muted-foreground"}`}>
+                            <div key={prompt.id} className="relative mt-2">
+                                <div className={`absolute -top-3 -left-3 w-8 h-8 flex items-center justify-center rounded-full font-bold shadow-md z-10 ${rankBackgrounds[index] ?? "bg-muted-foreground text-background"}`}>
                                     #{index + 1}
-                                </span>
-                                <div className="flex-1 min-w-0">
-                                    <PromptCard
-                                        id={prompt.id}
-                                        title={prompt.title}
-                                        description={prompt.description}
-                                        promptText={prompt.prompt_text}
-                                        author={{ name: "Creator", avatar: "C" }}
-                                        tags={[]}
-                                        likes={prompt.bookmark_count + prompt.rating_count}
-                                        views={prompt.view_count}
-                                        type={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
-                                        image={firstImage?.output_url}
-                                        rating={prompt.average_rating}
-                                    />
                                 </div>
+                                <PromptCard
+                                    id={prompt.id}
+                                    title={prompt.title}
+                                    description={prompt.description}
+                                    promptText={prompt.prompt_text}
+                                    author={{ name: "Creator", avatar: "C" }}
+                                    tags={[]}
+                                    likes={prompt.bookmark_count + prompt.rating_count}
+                                    views={prompt.view_count}
+                                    type={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
+                                    image={firstImage?.output_url}
+                                    rating={prompt.average_rating}
+                                />
                             </div>
                         );
                     })}

@@ -159,174 +159,176 @@ export default function PromptDetailsPage() {
     const outputImage = prompt.prompt_outputs?.find(o => o.output_type === 'image')?.output_url;
 
     return (
-        <div className="max-w-4xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="max-w-5xl mx-auto pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header / Back Button */}
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-4 flex items-center justify-between">
                 <button 
                     onClick={() => router.back()}
-                    className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Back</span>
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Prompts</span>
                 </button>
             </div>
 
             {/* Main Content Area */}
-            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm mb-8">
-                {/* Image Section */}
-                <div className="relative h-64 sm:h-96 bg-muted/50 overflow-hidden">
-                    {outputImage && !imageError ? (
-                        <img 
-                            src={outputImage} 
-                            alt={prompt.title}
-                            onError={() => setImageError(true)}
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10">
-                            {prompt.prompt_type === "Image" ? <ImageIcon className="w-16 h-16 text-primary/30" /> : <Sparkles className="w-16 h-16 text-primary/30" />}
+            <div className="bg-card rounded-2xl border border-border shadow-sm mb-6 p-1">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden rounded-[14px]">
+                    {/* Left Column: Image Area */}
+                    <div className="lg:col-span-5 relative min-h-[250px] lg:min-h-full bg-muted/50">
+                        {outputImage && !imageError ? (
+                            <img 
+                                src={outputImage} 
+                                alt={prompt.title}
+                                onError={() => setImageError(true)}
+                                className="absolute inset-0 w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10">
+                                {prompt.prompt_type === "Image" ? <ImageIcon className="w-12 h-12 text-primary/30" /> : <Sparkles className="w-12 h-12 text-primary/30" />}
+                            </div>
+                        )}
+                        <div className="absolute top-3 right-3">
+                            <Badge variant="secondary" className="backdrop-blur-md bg-background/80 shadow-sm text-xs px-2 py-0.5 font-medium">
+                                {prompt.prompt_type}
+                            </Badge>
                         </div>
-                    )}
-                    <div className="absolute top-4 right-4">
-                        <Badge variant="secondary" className="backdrop-blur-md bg-background/80 shadow-sm text-sm px-3 py-1">
-                            {prompt.prompt_type}
-                        </Badge>
                     </div>
-                </div>
 
-                {/* Details Section */}
-                <div className="p-6 sm:p-8">
-                    <div className="flex justify-between items-start mb-6">
+                    {/* Right Column: Details Section */}
+                    <div className="lg:col-span-7 p-6 flex flex-col justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold text-foreground mb-3">{prompt.title}</h1>
-                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                                        C
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-foreground mb-2 leading-tight">{prompt.title}</h1>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px] text-primary">
+                                                C
+                                            </div>
+                                            <span className="text-foreground">Creator</span>
+                                        </div>
+                                        <span>•</span>
+                                        <div className="flex items-center gap-1">
+                                            <Eye className="w-3.5 h-3.5" />
+                                            <span>{prompt.view_count} views</span>
+                                        </div>
                                     </div>
-                                    <span className="font-medium text-foreground">Creator</span>
                                 </div>
-                                <span>•</span>
-                                <div className="flex items-center gap-1">
-                                    <Eye className="w-4 h-4" />
-                                    <span>{prompt.view_count} views</span>
+                            </div>
+
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-3 leading-relaxed">
+                                {prompt.description}
+                            </p>
+
+                            {/* Tags */}
+                            {prompt.category_id && (
+                                <div className="flex flex-wrap gap-1.5 mb-5">
+                                    <Badge variant="outline" className="text-xs text-primary border-primary/20 bg-primary/5 font-medium">
+                                        {categoryName || "Loading..."}
+                                    </Badge>
+                                </div>
+                            )}
+
+                            {/* The Prompt Text */}
+                            <div className="bg-muted/30 rounded-xl p-4 border border-border/50 relative group mb-2">
+                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <button 
+                                        onClick={handleCopy}
+                                        className="p-1.5 rounded-md bg-background/80 backdrop-blur-sm border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-sm"
+                                        title="Copy prompt"
+                                    >
+                                        <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <h3 className="text-xs font-semibold text-foreground/80 mb-2 flex items-center gap-1.5">
+                                    <Sparkles className="w-3 h-3 text-primary" />
+                                    Prompt Preview
+                                </h3>
+                                <div className="max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                                    <p className="text-foreground whitespace-pre-wrap font-mono text-[13px] leading-relaxed">
+                                        {prompt.prompt_text}
+                                    </p>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
-                        {prompt.description}
-                    </p>
+                        {/* Actions Menu */}
+                        <div className="flex items-stretch justify-between mt-5 pt-4 border-t border-border">
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={handleLikeToggle}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors ${isLiked ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground'}`}
+                                >
+                                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                                    <span>{prompt.bookmark_count + prompt.rating_count}</span>
+                                </button>
+                            </div>
 
-                    {/* Tags */}
-                    {prompt.category_id && (
-                        <div className="flex flex-wrap gap-2 mb-8">
-                            <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
-                                Category: {categoryName || "Loading..."}
-                            </Badge>
-                        </div>
-                    )}
-
-                    {/* The Prompt Text */}
-                    <div className="bg-muted/30 rounded-2xl p-6 border border-border/50 relative group">
-                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button 
-                                onClick={handleCopy}
-                                className="p-2 rounded-lg bg-background/80 backdrop-blur-sm border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-sm"
-                                title="Copy prompt"
-                            >
-                                <Copy className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <h3 className="text-sm font-semibold text-foreground/80 mb-3 flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            Prompt Preview
-                        </h3>
-                        <p className="text-foreground whitespace-pre-wrap font-mono text-sm">
-                            {prompt.prompt_text}
-                        </p>
-                    </div>
-
-                    {/* Actions Menu */}
-                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
-                        <div className="flex items-center gap-4">
-                            <button 
-                                onClick={handleLikeToggle}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-colors ${isLiked ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-card text-muted-foreground border-border hover:bg-muted'}`}
-                            >
-                                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                                <span className="font-medium">{prompt.bookmark_count + prompt.rating_count}</span>
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium">
-                                        <Play className="w-4 h-4" />
-                                        <span>Run Prompt In...</span>
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                    <DropdownMenuLabel>Select AI Assistant</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => handleRunInAI('chatgpt')} className="cursor-pointer gap-3 p-3">
-                                        <Bot className="w-5 h-5" />
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">ChatGPT</span>
-                                            <span className="text-xs text-muted-foreground">Open in OpenAI</span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleRunInAI('claude')} className="cursor-pointer gap-3 p-3">
-                                        <BrainCircuit className="w-5 h-5" />
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">Claude</span>
-                                            <span className="text-xs text-muted-foreground">Open in Anthropic</span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleRunInAI('gemini')} className="cursor-pointer gap-3 p-3">
-                                        <Sparkle className="w-5 h-5" />
-                                        <div className="flex flex-col">
-                                            <span className="font-medium">Google Gemini</span>
-                                            <span className="text-xs text-muted-foreground">Open in Workspace</span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="flex gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-semibold shadow-sm">
+                                            <Play className="w-3.5 h-3.5" />
+                                            <span>Run Prompt</span>
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-56">
+                                        <DropdownMenuLabel className="text-xs">Select Assistant</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => handleRunInAI('chatgpt')} className="cursor-pointer gap-2 p-2">
+                                            <Bot className="w-4 h-4 text-emerald-500" />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium">ChatGPT</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleRunInAI('claude')} className="cursor-pointer gap-2 p-2">
+                                            <BrainCircuit className="w-4 h-4 text-orange-500" />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium">Claude</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleRunInAI('gemini')} className="cursor-pointer gap-2 p-2">
+                                            <Sparkle className="w-4 h-4 text-blue-500" />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-medium">Google Gemini</span>
+                                            </div>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Comments Section */}
-            <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm p-6 sm:p-8">
-                <h2 className="text-xl font-bold flex items-center gap-2 mb-6">
-                    <MessageSquare className="w-5 h-5 text-primary" />
-                    Comments <span className="text-muted-foreground text-sm font-normal">({comments.length})</span>
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm p-6">
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-5">
+                    <MessageSquare className="w-4 h-4 text-primary" />
+                    Comments <span className="text-muted-foreground text-sm font-medium">({comments.length})</span>
                 </h2>
 
                 {/* Comment Form */}
-                <form onSubmit={handlePostComment} className="mb-8">
-                    <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
-                            <span className="font-bold text-primary text-sm">U</span>
+                <form onSubmit={handlePostComment} className="mb-6">
+                    <div className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center mt-1">
+                            <span className="font-bold text-primary text-xs">U</span>
                         </div>
-                        <div className="flex-grow">
+                        <div className="flex-grow relative">
                             <textarea
                                 value={commentText}
                                 onChange={(e) => setCommentText(e.target.value)}
                                 placeholder="Add a comment..."
-                                className="w-full bg-muted/50 border border-border rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none min-h-[100px]"
+                                className="w-full bg-muted/40 border border-border rounded-xl p-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none min-h-[60px]"
                             />
-                            <div className="mt-3 flex justify-end">
+                            <div className="absolute right-2 bottom-3">
                                 <button 
                                     type="submit"
                                     disabled={submittingComment || !commentText.trim()}
-                                    className="flex items-center gap-2 px-5 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
+                                    className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors disabled:opacity-50"
                                 >
                                     <Send className="w-4 h-4" />
-                                    <span>Post Comment</span>
                                 </button>
                             </div>
                         </div>
@@ -334,9 +336,9 @@ export default function PromptDetailsPage() {
                 </form>
 
                 {/* Comments List */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {comments.length === 0 ? (
-                        <div className="py-4">
+                        <div className="py-2">
                             <EmptyState 
                                 title="No Comments" 
                                 description="No comments yet. Be the first to start the discussion!"
@@ -344,23 +346,23 @@ export default function PromptDetailsPage() {
                         </div>
                     ) : (
                         comments.map((comment) => (
-                            <div key={comment.id} className="flex gap-4">
-                                <div className="w-10 h-10 rounded-full bg-secondary flex-shrink-0 flex items-center justify-center">
-                                    <span className="font-bold text-secondary-foreground text-sm">
+                            <div key={comment.id} className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-secondary flex-shrink-0 flex items-center justify-center mt-1">
+                                    <span className="font-bold text-secondary-foreground text-xs">
                                         {comment.user?.username?.charAt(0).toUpperCase() || 'U'}
                                     </span>
                                 </div>
                                 <div className="flex-grow">
-                                    <div className="bg-muted/30 rounded-2xl rounded-tl-none p-4 border border-border/50">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-medium text-sm text-foreground">
+                                    <div className="bg-muted/30 rounded-xl rounded-tl-sm p-3 border border-border/50">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="font-medium text-[13px] text-foreground">
                                                 {comment.user?.username || 'Anonymous User'}
                                             </span>
-                                            <span className="text-xs text-muted-foreground">
+                                            <span className="text-[11px] text-muted-foreground font-medium">
                                                 {new Date(comment.created_at).toLocaleDateString()}
                                             </span>
                                         </div>
-                                        <p className="text-sm text-foreground/80 whitespace-pre-wrap">{comment.content}</p>
+                                        <p className="text-[13px] leading-relaxed text-foreground/80 whitespace-pre-wrap">{comment.content}</p>
                                     </div>
                                 </div>
                             </div>
@@ -370,4 +372,4 @@ export default function PromptDetailsPage() {
             </div>
         </div>
     );
-}
+};

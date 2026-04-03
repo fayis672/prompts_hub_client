@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PromptCard } from "./PromptCard";
 import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
@@ -9,26 +9,13 @@ import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export function MostLikedSection() {
-    const [prompts, setPrompts] = useState<PromptRecommendation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: prompts = [], isLoading: loading, error: queryError } = useQuery({
+        queryKey: ['most-liked-prompts'],
+        queryFn: () => getPrompts({ sort: "most_liked", limit: 4 }),
+        staleTime: 5 * 60 * 1000, 
+    });
 
-    useEffect(() => {
-        const fetchPrompts = async () => {
-            try {
-                const data = await getPrompts({ sort: "most_liked", limit: 4 });
-                setPrompts(data);
-                setError(null);
-            } catch (err: any) {
-                console.error("Failed to fetch most liked prompts:", err);
-                setError(err.message || "Failed to load most liked prompts.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPrompts();
-    }, []);
-
+    const error = queryError ? "Failed to load most liked prompts." : null;
     return (
         <section className="py-20">
             <div className="flex items-center justify-between mb-10">
@@ -60,7 +47,7 @@ export function MostLikedSection() {
                     />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {prompts.map(prompt => {
                         const firstImage = prompt.prompt_outputs?.find(o => o.output_type === 'image' && o.output_url);
                         return (
