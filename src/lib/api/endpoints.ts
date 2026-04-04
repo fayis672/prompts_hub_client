@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
     PROMPTS: {
         CREATE: '/api/v1/prompts/',
         LIST: '/api/v1/prompts/',
+        SEARCH: '/api/v1/prompts/search',
         TRENDING: '/api/v1/prompts/trending',
         RECOMMENDATIONS: '/api/v1/prompts/recommendations/prompts',
         BY_ID: (id: string) => `/api/v1/prompts/${id}`,

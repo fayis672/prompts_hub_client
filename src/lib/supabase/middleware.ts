@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Routes that DO NOT require authentication
-const PUBLIC_ROUTES = ['/login', '/signup', '/auth', '/create-profile']
+const PUBLIC_ROUTES = ['/login', '/signup', '/auth', '/create-profile', '/forgot-password', '/reset-password']
 
 // Routes that REQUIRE authentication (prefix match)
 const PROTECTED_PREFIXES = [

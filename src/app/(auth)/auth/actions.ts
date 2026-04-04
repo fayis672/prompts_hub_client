@@ -126,6 +126,56 @@ export async function signup(prevState: any, formData: FormData) {
     redirect('/')
 }
 
+export async function forgotPassword(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    const email = formData?.get('email') as string
+
+    if (!email) {
+        return { error: 'Email is required' }
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteUrl}/auth/callback?type=recovery`,
+    })
+
+    if (error) {
+        return { error: error.message, email }
+    }
+
+    return { success: true, email }
+}
+
+export async function resetPassword(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    const password = formData?.get('password') as string
+    const confirmPassword = formData?.get('confirm_password') as string
+
+    if (!password || !confirmPassword) {
+        return { error: 'Both fields are required' }
+    }
+
+    if (password !== confirmPassword) {
+        return { error: 'Passwords do not match' }
+    }
+
+    if (password.length < 6) {
+        return { error: 'Password must be at least 6 characters' }
+    }
+
+    const { error } = await supabase.auth.updateUser({ password })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/', 'layout')
+    redirect('/')
+}
+
 export async function logout() {
     const supabase = await createClient()
 

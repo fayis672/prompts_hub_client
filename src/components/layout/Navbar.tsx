@@ -1,11 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/common/Logo";
-import { Search, Menu, Plus, Bell } from "lucide-react"; // Assuming lucide-react is installed
+import { Search, Menu, Plus, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils"; // Assuming a utility for class merging exists or I will create one inline if needed.
+import { cn } from "@/lib/utils";
 import { ProfileMenu } from "./ProfileMenu";
 
 // Since I don't see a lib/utils.ts file in the file list earlier, I'll inline the class merger if needed or better yet, I should check if it exists. 
@@ -27,10 +27,21 @@ interface NavbarProps {
 
 export function Navbar({ user }: NavbarProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchExpanded, setIsSearchExpanded] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearchSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        const q = searchQuery.trim();
+        if (q) router.push(`/search?q=${encodeURIComponent(q)}`);
+    };
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleSearchSubmit();
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -72,11 +83,21 @@ export function Navbar({ user }: NavbarProps) {
                             className="w-full h-12 pl-12 pr-4 rounded-2xl bg-muted/30 border border-border/50 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 outline-none transition-all duration-300 text-sm shadow-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={handleSearchKeyDown}
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                            <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                                <span className="text-xs">⌘</span>K
-                            </kbd>
+                            {searchQuery ? (
+                                <button
+                                    onClick={handleSearchSubmit}
+                                    className="h-7 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                                >
+                                    Search
+                                </button>
+                            ) : (
+                                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                                    <span className="text-xs">⌘</span>K
+                                </kbd>
+                            )}
                         </div>
                     </div>
                 </div>
