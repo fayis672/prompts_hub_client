@@ -20,23 +20,6 @@ export function VariableManager() {
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Variables</h3>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                        append({
-                            variable_name: '',
-                            variable_key: '',
-                            data_type: 'text',
-                            is_required: false,
-                            display_order: fields.length,
-                        })
-                    }
-                >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Variable
-                </Button>
             </div>
             <div className="space-y-4">
                 {fields.map((field, index) => (

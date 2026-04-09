@@ -19,6 +19,8 @@ export function PromptEditor() {
 
     // We track the editor's "internal" string representation to avoid loops
     const lastContentRef = useRef<string>('')
+    // Tracking variables to detect external changes (from VariableManager)
+    const lastVariablesRef = useRef<Variable[]>([])
 
     const variables = useWatch({ control, name: 'variables' }) as Variable[] || []
     // We only use prompt_text for initial load. 
@@ -32,24 +34,15 @@ export function PromptEditor() {
         let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 
-        // Convert newlines to <p> tags or <br>? StarterKit expects paragraphs.
-        // Simplest strategy: Split by \n, wrap in <p>.
-
-        // Better: just replace {{key}} with the span tag string.
-        // And let Tiptap parse line breaks? HTML needs <p> or <br>.
-
         // Strategy: 
         // 1. Replace {{key}} with <span data-type="variable" data-id="key" data-label="key"></span>
         const html = safeText.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (match, key) => {
             // Find if existing variable has a better name
             const existingVar = variables?.find(v => v.variable_key === key)
             const label = existingVar?.variable_name || key
-            // data-label is just for initial display, won't sync back immediately unless stored in attr
             return `<span data-type="variable" data-id="${key}" data-label="${label}"></span>`
         })
 
-        // Wrap in p tags if no tags present? Tiptap handles plain text by wrapping in paragraph usually.
-        // But to preserve newlines, we should replace \n with <br> or wrap paragraphs.
         return html.split('\n').map(line => `<p>${line || '<br>'}</p>`).join('')
     }
 
@@ -63,12 +56,10 @@ export function PromptEditor() {
         json.content.forEach((node: any, index: number) => {
             if (node.type === 'paragraph') {
                 if (node.content) {
-                    const res = serializeEditorContent(node) // Recursion for paragraph content
+                    const res = serializeEditorContent(node)
                     text += res.text
                     res.foundKeys.forEach(k => foundKeys.add(k))
                 }
-                // Add newline after paragraph if it's not the last one? 
-                // Using \n for separation
                 if (index < json.content.length - 1) {
                     text += '\n'
                 }
@@ -78,7 +69,7 @@ export function PromptEditor() {
                 const id = node.attrs.id
                 text += `{{${id}}}`
                 foundKeys.add(id)
-            } else if (node.type === 'hardBreak') { // if using hard breaks
+            } else if (node.type === 'hardBreak') {
                 text += '\n'
             }
         })
@@ -118,7 +109,7 @@ export function PromptEditor() {
 
             // 2. Sync Variables Array
             const currentVars = getValues('variables') as Variable[] || []
-            const newVars = [...currentVars]
+            let newVars = [...currentVars]
             let hasChanges = false
 
             // Add new variables found in text
@@ -135,46 +126,93 @@ export function PromptEditor() {
                 }
             })
 
-            // OPTIONAL: Remove variables NOT in text? 
-            // Often verified during submit, but doing it live keeps it clean.
-            // But be careful of losing metadata if user just momentarily deletes text.
-            // Let's NOT auto-delete for now, or maybe only if user explicitly deletes via UI?
-            // Actually, the requirement said "easy to add and edit variables". Auto-cleanup is usually preferred in "smart" modes.
-            // Let's filter out variables that are no longer in foundKeys.
-            /*
+            // Remove variables NOT in text 
+            // This ensures that deleting a chip in the editor deletes it from VariableManager
             const filteredVars = newVars.filter(v => foundKeys.has(v.variable_key))
             if (filteredVars.length !== newVars.length) {
                 newVars = filteredVars
                 hasChanges = true
             }
-            */
-            // Decision: Let's Keep them to avoid accidental data loss, but maybe show them as "unused"? 
-            // For now, let's keep the existing logic from previous file: it added new ones.
-            // To strictly follow "PromptEditor" previous logic, it didn't delete. 
-            // But clean sync is better. Let's stick to additive only for safety, user can delete via sheet.
 
             if (hasChanges) {
                 setValue('variables', newVars)
+                lastVariablesRef.current = newVars // Mark as synced from editor
             }
         }
     })
 
-    // Handle variable updates from Sheet
+    // Sync from variables list (External) -> Editor
+    // This handles deletions or name changes from VariableManager
+    useEffect(() => {
+        if (!editor) return
+
+        const currentVars = variables
+        const lastVars = lastVariablesRef.current
+
+        // Skip if this change was already processed by onUpdate
+        if (JSON.stringify(currentVars) === JSON.stringify(lastVars)) return
+
+        editor.commands.command(({ tr }) => {
+            const { doc } = tr
+            let modified = false
+
+            // 1. Remove nodes whose keys are no longer in variables array
+            const validKeys = new Set(currentVars.map(v => v.variable_key))
+            let deletePositions: number[] = []
+
+            doc.descendants((node, pos) => {
+                if (node.type.name === 'variable') {
+                    const id = node.attrs.id
+                    if (!validKeys.has(id)) {
+                        deletePositions.push(pos)
+                    } else {
+                        // 2. Update labels if they changed in the variables array
+                        const v = currentVars.find(v => v.variable_key === id)
+                        if (v && v.variable_name !== node.attrs.label) {
+                            tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: v.variable_name })
+                            modified = true
+                        }
+                    }
+                }
+            })
+
+            // Delete nodes in reverse order to keep positions valid
+            deletePositions.reverse().forEach(pos => {
+                tr.delete(pos, pos + 1)
+                modified = true
+            })
+
+            return modified
+        })
+
+        lastVariablesRef.current = currentVars
+    }, [variables, editor])
+
+
     const handleVariableSave = (updatedVar: Variable) => {
         const currentVars = getValues('variables') as Variable[] || []
         const index = currentVars.findIndex(v => v.variable_key === updatedVar.variable_key)
 
-        let newVars = [...currentVars]
-        if (index >= 0) {
-            newVars[index] = updatedVar
-        } else {
-            // Should not happen if editing existing, but safety
-            newVars.push(updatedVar)
+        if (index === -1) {
+            // This is a NEW variable from the "Add Variable" button
+            // We insert it into the editor now that the user has saved
+            if (editor) {
+                editor.chain().focus().insertContent({
+                    type: 'variable',
+                    attrs: { id: updatedVar.variable_key, label: updatedVar.variable_name || updatedVar.variable_key }
+                }).run()
+            }
+            // onUpdate will handle adding it to the 'variables' form state
+            return
         }
-        setValue('variables', newVars)
 
-        // Update the label in the editor to match new name?
-        // We'd need to find all nodes with this ID and update attributes.
+        // Existing variable update
+        let newVars = [...currentVars]
+        newVars[index] = updatedVar
+        setValue('variables', newVars)
+        lastVariablesRef.current = newVars
+
+        // Update the label in the editor to match new name
         if (editor) {
             editor.commands.command(({ tr }) => {
                 const { doc } = tr
@@ -195,25 +233,21 @@ export function PromptEditor() {
     const handleVariableDelete = (key: string) => {
         // Remove from variables list
         const currentVars = getValues('variables') as Variable[] || []
-        setValue('variables', currentVars.filter(v => v.variable_key !== key))
+        const newVars = currentVars.filter(v => v.variable_key !== key)
+        setValue('variables', newVars)
+        lastVariablesRef.current = newVars
 
-        // Remove from editor?
-        // Or just let it be invalid? Better to remove the nodes.
+        // Remove from editor
         if (editor) {
             editor.commands.command(({ tr }) => {
                 const { doc } = tr
-                // We need to delete nodes. iterating and deleting changes positions, so careful.
-                // easier: replace with text? or just delete.
-                // Let's just delete the node.
                 let positions: number[] = []
                 doc.descendants((node, pos) => {
                     if (node.type.name === 'variable' && node.attrs.id === key) {
                         positions.push(pos)
                     }
                 })
-                // Sort reverse to delete safely
                 positions.reverse().forEach(pos => {
-                    // Node size is 1 for atom
                     tr.delete(pos, pos + 1)
                 })
                 return positions.length > 0
@@ -222,19 +256,11 @@ export function PromptEditor() {
     }
 
     const insertVariable = () => {
+        // Generate a temporary key for the new variable
         const key = `var_${Date.now().toString().slice(-4)}`
-        if (editor) {
-            editor.chain().focus().insertContent({
-                type: 'variable',
-                attrs: { id: key, label: 'New Variable' }
-            }).run()
-            // It will trigger onUpdate, which adds it to the list.
-            // We can also immediately open the sheet.
-            setTimeout(() => {
-                setSelectedVariableKey(key)
-                setIsSheetOpen(true)
-            }, 100)
-        }
+        // Just open the sheet. We won't insert into editor until onSave is called.
+        setSelectedVariableKey(key)
+        setIsSheetOpen(true)
     }
 
     const selectedVariable = variables.find(v => v.variable_key === selectedVariableKey) || {

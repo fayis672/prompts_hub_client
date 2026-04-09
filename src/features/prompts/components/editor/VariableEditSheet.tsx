@@ -53,8 +53,9 @@ export function VariableEditSheet({ open, onOpenChange, variable, onSave, onDele
                     </SheetDescription>
                 </SheetHeader>
 
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
+                <div className="space-y-6 mt-6">
                     <div className="space-y-4">
+                        {/* ... existing input fields ... */}
                         <div className="grid gap-2">
                             <Label>Variable Name (Label)</Label>
                             <Input {...form.register('variable_name')} placeholder="e.g. User Name" />
@@ -126,7 +127,9 @@ export function VariableEditSheet({ open, onOpenChange, variable, onSave, onDele
                                 type="button"
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => {
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
                                     if (variable) onDelete(variable.variable_key)
                                     onOpenChange(false)
                                 }}
@@ -136,15 +139,30 @@ export function VariableEditSheet({ open, onOpenChange, variable, onSave, onDele
                             </Button>
                         )}
                         <div className="flex gap-2 ml-auto">
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onOpenChange(false);
+                                }}
+                            >
                                 Cancel
                             </Button>
-                            <Button type="submit">
+                            <Button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    form.handleSubmit(onSubmit)(e);
+                                }}
+                            >
                                 Save Changes
                             </Button>
                         </div>
                     </div>
-                </form>
+                </div>
             </SheetContent>
         </Sheet>
     )
