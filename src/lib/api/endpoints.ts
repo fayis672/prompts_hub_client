@@ -4,6 +4,9 @@ export const API_ENDPOINTS = {
         CREATE: '/api/v1/users/',
         ME: '/api/v1/users/me',
         UPDATE: '/api/v1/users/me',
+        PROFILE: (username: string) => `/api/v1/users/profile/${username}`,
+        PROFILE_PROMPTS: (username: string) => `/api/v1/users/profile/${username}/prompts`,
+        FOLLOW: (username: string) => `/api/v1/users/profile/${username}/follow`,
     },
     CATEGORIES: {
         LIST: '/api/v1/categories/',

@@ -37,7 +37,15 @@ export interface PromptRecommendation {
         output_url?: string;
         output_type: string;
     }[];
+    author?: {
+        id: string;
+        username: string;
+        display_name: string | null;
+        avatar_url: string | null;
+        total_followers?: number;
+    };
 }
+
 
 export type SortOrder = 'new' | 'most_liked' | 'most_viewed' | 'most_bookmarked';
 

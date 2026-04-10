@@ -61,7 +61,11 @@ export function NewArrivalsSection() {
                                 title={prompt.title}
                                 description={prompt.description}
                                 promptText={prompt.prompt_text}
-                                author={{ name: "Creator", avatar: "C" }}
+                                author={{ 
+                                    name: prompt.author?.display_name || prompt.author?.username || "Creator", 
+                                    avatar: prompt.author?.avatar_url || "" 
+                                }}
+
                                 tags={[]}
                                 likes={prompt.bookmark_count + prompt.rating_count}
                                 views={prompt.view_count}

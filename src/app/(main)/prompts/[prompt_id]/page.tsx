@@ -5,10 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { getPromptById, likePrompt, unlikePrompt, PromptRecommendation } from "@/lib/api/prompts";
 import { getCommentsByPromptId, createComment, Comment } from "@/lib/api/comments";
 import { getCategories, Category } from "@/lib/api/categories";
+import { getUserProfile, followUser, unfollowUser } from "@/lib/api/users";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Heart, Eye, Copy, ArrowLeft, Send, Sparkles, ImageIcon, MessageSquare, Play, Bot, BrainCircuit, Sparkle } from "lucide-react";
+import { Heart, Eye, Copy, ArrowLeft, Send, Sparkles, ImageIcon, MessageSquare, Play, Bot, BrainCircuit, Sparkle, UserPlus, ExternalLink, Users } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { motion } from "framer-motion";
 import {
@@ -33,6 +34,8 @@ export default function PromptDetailsPage() {
     const [isLiked, setIsLiked] = useState(false);
     const [commentText, setCommentText] = useState("");
     const [submittingComment, setSubmittingComment] = useState(false);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [followLoading, setFollowLoading] = useState(false);
     const [supabase] = useState(() => createClient());
     const [imageError, setImageError] = useState(false);
     const hasFetched = useRef(false);
@@ -49,6 +52,22 @@ export default function PromptDetailsPage() {
                 
                 const data = await getPromptById(prompt_id, token);
                 setPrompt(data);
+                
+                if (data.author?.username) {
+                    try {
+                        const profile = await getUserProfile(data.author.username, token);
+                        setPrompt(prev => prev ? {
+                            ...prev, 
+                            author: {
+                                ...prev.author!,
+                                total_followers: profile.total_followers
+                            }
+                        } : null);
+                        setIsFollowing(profile.is_following);
+                    } catch (e) {
+                         console.error("Failed to fetch author profile for follow state", e);
+                    }
+                }
                 
                 // Fetch category
                 if (data.category_id) {
@@ -119,6 +138,41 @@ export default function PromptDetailsPage() {
             }
         } catch (error) {
             console.error("Like toggle failed", error);
+        }
+    };
+
+    const handleFollowToggle = async () => {
+        if (!prompt?.author?.username) return;
+        try {
+            setFollowLoading(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            
+            if (isFollowing) {
+                const res = await unfollowUser(prompt.author.username, session.access_token);
+                setIsFollowing(false);
+                setPrompt(prev => prev ? {
+                    ...prev,
+                    author: {
+                        ...prev.author!,
+                        total_followers: res.follower_count
+                    }
+                } : null);
+            } else {
+                const res = await followUser(prompt.author.username, session.access_token);
+                setIsFollowing(true);
+                setPrompt(prev => prev ? {
+                    ...prev,
+                    author: {
+                        ...prev.author!,
+                        total_followers: res.follower_count
+                    }
+                } : null);
+            }
+        } catch (error) {
+            console.error("Follow toggle failed", error);
+        } finally {
+            setFollowLoading(false);
         }
     };
 
@@ -205,24 +259,56 @@ export default function PromptDetailsPage() {
                     {/* Right Column: Details Section */}
                     <div className="lg:col-span-7 p-6 flex flex-col justify-between">
                         <div>
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-foreground mb-2 leading-tight">{prompt.title}</h1>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center font-bold text-[10px] text-primary">
-                                                C
-                                            </div>
-                                            <span className="text-foreground">Creator</span>
+                            <div className="mb-6">
+                                <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">{prompt.title}</h1>
+                            
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50">
+                                <div className="flex items-center gap-3">
+                                    {prompt.author?.avatar_url ? (
+                                        <img 
+                                            src={prompt.author.avatar_url} 
+                                            alt={prompt.author.display_name || prompt.author.username} 
+                                            className="w-10 h-10 rounded-full object-cover border border-border" 
+                                        />
+                                    ) : (
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm text-primary border border-primary/20">
+                                            {(prompt.author?.display_name || prompt.author?.username || "C").charAt(0).toUpperCase()}
                                         </div>
-                                        <span>•</span>
-                                        <div className="flex items-center gap-1">
-                                            <Eye className="w-3.5 h-3.5" />
-                                            <span>{prompt.view_count} views</span>
+                                    )}
+                                    <div>
+                                        <div className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                                            {prompt.author?.display_name || prompt.author?.username || "Creator"}
+                                            <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-primary/5 text-primary border-primary/20 leading-none">
+                                                PRO
+                                            </Badge>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                            @{prompt.author?.username || "creator"} 
+                                            <span className="text-[10px]">•</span> 
+                                            <div className="flex items-center gap-1">
+                                                <Users className="w-3.5 h-3.5" />
+                                                {prompt.author?.total_followers || 0} followers
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={handleFollowToggle}
+                                        disabled={followLoading}
+                                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all shadow-sm ${
+                                            isFollowing 
+                                                ? "bg-muted text-foreground hover:bg-muted/80" 
+                                                : "bg-primary text-primary-foreground hover:bg-primary/90"
+                                        }`}
+                                    >
+                                        <UserPlus className="w-3.5 h-3.5" />
+                                        <span>{isFollowing ? "Following" : "Follow"}</span>
+                                    </button>
+                                </div>
                             </div>
+                        </div>
 
                             <p className="text-sm text-muted-foreground mb-4 line-clamp-3 leading-relaxed">
                                 {prompt.description}

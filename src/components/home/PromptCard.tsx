@@ -129,9 +129,13 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
             <div className="p-5 flex flex-col flex-grow">
                 {/* Author */}
                 <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                        {author.name.charAt(0)}
-                    </div>
+                    {author.avatar && author.avatar.startsWith('http') ? (
+                        <img src={author.avatar} alt={author.name} className="w-6 h-6 rounded-full object-cover" />
+                    ) : (
+                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                            {author.name.charAt(0).toUpperCase()}
+                        </div>
+                    )}
                     <span className="text-xs text-muted-foreground font-medium">{author.name}</span>
                     {rating && (
                         <span className="ml-auto text-xs font-bold text-amber-500 flex items-center gap-1">
@@ -139,6 +143,7 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
                         </span>
                     )}
                 </div>
+
 
                 {/* Content */}
                 <h3 className="font-bold text-lg text-foreground mb-2 line-clamp-1 group-hover:text-primary transition-colors">{title}</h3>
