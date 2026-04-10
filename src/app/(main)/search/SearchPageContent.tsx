@@ -4,10 +4,12 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Search, SlidersHorizontal, X, Loader2 } from 'lucide-react'
 import { PromptCard } from '@/components/home/PromptCard'
+import { PromptCardSkeleton } from '@/components/home/PromptCardSkeleton'
 import { searchPrompts } from '@/lib/api/search'
 import { getCategories, Category } from '@/lib/api/categories'
 import { PromptRecommendation, SortOrder } from '@/lib/api/prompts'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
+import { useIntersectionObserver } from '@/hooks/use-intersection-observer'
 
 const SORT_OPTIONS: { label: string; value: SortOrder }[] = [
     { label: 'Most Liked', value: 'most_liked' },
@@ -24,9 +26,12 @@ const PROMPT_TYPES = [
     { label: 'Video', value: 'video' },
 ]
 
+const ITEMS_PER_PAGE = 12;
+
 export default function SearchPageContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
+    const { ref: loadMoreRef, entry } = useIntersectionObserver({ threshold: 0.1 });
 
     const [query, setQuery] = useState(searchParams.get('q') || '')
     const [inputValue, setInputValue] = useState(searchParams.get('q') || '')
@@ -43,13 +48,38 @@ export default function SearchPageContent() {
         staleTime: 1000 * 60 * 60,
     })
 
-    // Fetch search results
-    const { data: results = [], isLoading, isFetching } = useQuery<PromptRecommendation[]>({
+    // Fetch search results with Infinite Query
+    const { 
+        data: infiniteData, 
+        fetchNextPage, 
+        hasNextPage, 
+        isFetchingNextPage, 
+        isLoading: loading,
+        isFetching
+    } = useInfiniteQuery({
         queryKey: ['search', query, sort, categoryId, promptType],
-        queryFn: () => searchPrompts({ q: query, sort, category_id: categoryId || undefined, prompt_type: promptType || undefined }),
+        queryFn: ({ pageParam = 0 }) => searchPrompts({ 
+            q: query, 
+            sort, 
+            category_id: categoryId || undefined, 
+            prompt_type: promptType || undefined,
+            limit: ITEMS_PER_PAGE,
+            skip: pageParam
+        }),
         enabled: query.trim().length > 0,
+        getNextPageParam: (lastPage, allPages) => {
+            if (lastPage.length < ITEMS_PER_PAGE) return undefined;
+            return allPages.length * ITEMS_PER_PAGE;
+        },
+        initialPageParam: 0,
         staleTime: 1000 * 30,
     })
+
+    useEffect(() => {
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     // Sync URL params
     useEffect(() => {
@@ -76,7 +106,8 @@ export default function SearchPageContent() {
     }
 
     const hasActiveFilters = categoryId || promptType || sort !== 'most_liked'
-    const loading = isLoading || isFetching
+    const results = infiniteData?.pages.flat() || []
+    const totalResults = results.length;
 
     return (
         <div className="container mx-auto px-4 py-8 min-h-screen">
@@ -164,8 +195,10 @@ export default function SearchPageContent() {
             )}
 
             {query && loading && (
-                <div className="flex justify-center items-center py-20">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <PromptCardSkeleton key={i} />
+                    ))}
                 </div>
             )}
 
@@ -179,7 +212,7 @@ export default function SearchPageContent() {
             {query && !loading && results.length > 0 && (
                 <>
                     <p className="text-sm text-muted-foreground mb-6">
-                        {results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;
+                        {totalResults} result{totalResults !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {results.map((prompt) => (
@@ -193,16 +226,37 @@ export default function SearchPageContent() {
                                 tags={[]}
                                 likes={prompt.rating_count ?? 0}
                                 views={prompt.view_count ?? 0}
-                                type={
-                                    prompt.prompt_type === 'image' ? 'Image'
-                                    : prompt.prompt_type === 'code' ? 'Code'
+                                category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
+                                promptType={
+                                    prompt.prompt_type === 'image' || prompt.prompt_type === 'image_generation' ? 'Image'
+                                    : prompt.prompt_type === 'code' || prompt.prompt_type === 'code_generation' ? 'Code'
                                     : prompt.prompt_type === 'video' ? 'Video'
                                     : 'Text'
                                 }
                                 image={prompt.prompt_outputs?.[0]?.output_url}
                             />
                         ))}
+                        {isFetchingNextPage && (
+                            <>
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                            </>
+                        )}
                     </div>
+
+                    {hasNextPage && (
+                        <div ref={loadMoreRef as any} className="h-20 flex items-center justify-center mt-10">
+                            {isFetchingNextPage && (
+                                <div className="flex gap-2">
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </>
             )}
         </div>

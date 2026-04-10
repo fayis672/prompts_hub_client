@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { PromptCard } from "./PromptCard";
+import { PromptCardSkeleton } from "./PromptCardSkeleton";
 import { ListFilter, Grid as GridIcon, List as ListIcon, Sparkles, Layers } from "lucide-react";
 import { getRecommendedPrompts, getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { getCategories, Category } from "@/lib/api/categories";
-import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
+
+const ITEMS_PER_PAGE = 12;
 
 export function RecentFeed() {
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
     const [supabase] = useState(() => createClient());
+    const { ref: loadMoreRef, entry } = useIntersectionObserver({ threshold: 0.1 });
 
     const { data: categories = [] } = useQuery({
         queryKey: ['categories'],
@@ -21,33 +25,48 @@ export function RecentFeed() {
         staleTime: 5 * 60 * 1000,
     });
 
-    const { data: promptsData, isLoading: loading, error: queryError } = useQuery({
+    const { 
+        data: infiniteData, 
+        fetchNextPage, 
+        hasNextPage, 
+        isFetchingNextPage, 
+        isLoading: loading, 
+        error: queryError 
+    } = useInfiniteQuery({
         queryKey: ['recent-feed', selectedCategory],
-        queryFn: async () => {
+        queryFn: async ({ pageParam = 0 }) => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
             
             if (selectedCategory === "all") {
-                if (token) return getRecommendedPrompts(10, token);
-                return getPrompts({ sort: "new", limit: 20 });
+                if (token) return getRecommendedPrompts(ITEMS_PER_PAGE, token);
+                return getPrompts({ sort: "new", limit: ITEMS_PER_PAGE, skip: pageParam });
             }
             
-            return getPrompts({ category_id: selectedCategory, sort: "new", limit: 20 });
+            return getPrompts({ 
+                category_id: selectedCategory, 
+                sort: "new", 
+                limit: ITEMS_PER_PAGE, 
+                skip: pageParam 
+            });
         },
+        getNextPageParam: (lastPage, allPages) => {
+            if (lastPage.length < ITEMS_PER_PAGE) return undefined;
+            return allPages.length * ITEMS_PER_PAGE;
+        },
+        initialPageParam: 0,
         staleTime: 2 * 60 * 1000,
     });
 
-    const isPersonalized = selectedCategory === "all" && promptsData && promptsData.length > 0 && "match_score" in promptsData[0];
-    const prompts = promptsData || [];
-    const error = queryError ? (queryError as Error).message || "Failed to load prompts." : null;
+    useEffect(() => {
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    if (loading && prompts.length === 0) {
-        return (
-            <div className="pt-20 pb-20">
-                <LoadingAnimation text="Curating your feed..." />
-            </div>
-        );
-    }
+    const prompts = infiniteData?.pages.flat() || [];
+    const isPersonalized = selectedCategory === "all" && prompts.length > 0 && "match_score" in prompts[0];
+    const error = queryError ? (queryError as Error).message || "Failed to load prompts." : null;
 
     return (
         <section className="pt-2 pb-20">
@@ -118,6 +137,12 @@ export function RecentFeed() {
 
             {error ? (
                 <div className="py-20 text-center text-destructive">{error}</div>
+            ) : loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <PromptCardSkeleton key={i} />
+                    ))}
+                </div>
             ) : prompts.length === 0 ? (
                 <div className="py-10">
                     <EmptyState 
@@ -126,34 +151,51 @@ export function RecentFeed() {
                     />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {prompts.map(prompt => {
-                        const firstImage = prompt.prompt_outputs?.find(o => o.output_type === 'image' && o.output_url);
-                        return (
-                            <PromptCard
-                                key={prompt.id}
-                                id={prompt.id}
-                                title={prompt.title}
-                                description={prompt.description}
-                                promptText={prompt.prompt_text}
-                                author={{ name: "Creator", avatar: "C" }}
-                                tags={[]}
-                                likes={prompt.bookmark_count + prompt.rating_count}
-                                views={prompt.view_count}
-                                type={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
-                                image={firstImage?.output_url}
-                                rating={prompt.average_rating}
-                            />
-                        );
-                    })}
-                </div>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {prompts.map(prompt => {
+                            const firstImage = prompt.prompt_outputs?.find(o => o.output_type === 'image' && o.output_url);
+                            return (
+                                <PromptCard
+                                    key={prompt.id}
+                                    id={prompt.id}
+                                    title={prompt.title}
+                                    description={prompt.description}
+                                    promptText={prompt.prompt_text}
+                                    author={{ name: "Creator", avatar: "C" }}
+                                    tags={[]}
+                                    likes={prompt.bookmark_count + prompt.rating_count}
+                                    views={prompt.view_count}
+                                    category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
+                                    promptType={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
+                                    image={firstImage?.output_url}
+                                    rating={prompt.average_rating}
+                                />
+                            );
+                        })}
+                        {isFetchingNextPage && (
+                            <>
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                            </>
+                        )}
+                    </div>
+                    
+                    {/* Infinite Scroll Trigger */}
+                    {hasNextPage && (
+                        <div ref={loadMoreRef as any} className="h-20 flex items-center justify-center mt-10">
+                            {isFetchingNextPage && (
+                                <div className="flex gap-2">
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
             )}
-
-            <div className="mt-16 text-center">
-                <button className="px-8 py-3 rounded-full bg-card border border-border text-foreground font-medium hover:bg-accent hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
-                    Load More Prompts
-                </button>
-            </div>
         </section>
     );
 }

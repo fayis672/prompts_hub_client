@@ -5,10 +5,17 @@ import { PromptCard } from "./PromptCard";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
+import { getCategories } from "@/lib/api/categories";
 import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export function NewArrivalsSection() {
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: getCategories,
+        staleTime: 5 * 60 * 1000,
+    });
+
     const { data: prompts = [], isLoading: loading, error: queryError } = useQuery({
         queryKey: ['new-arrivals-prompts'],
         queryFn: () => getPrompts({ sort: "new", limit: 4 }),
@@ -34,8 +41,10 @@ export function NewArrivalsSection() {
             </div>
 
             {loading ? (
-                <div className="py-16">
-                    <LoadingAnimation text="Loading new arrivals..." />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <PromptCardSkeleton key={i} />
+                    ))}
                 </div>
             ) : error ? (
                 <div className="py-16 text-center text-destructive">{error}</div>
@@ -56,7 +65,8 @@ export function NewArrivalsSection() {
                                 tags={[]}
                                 likes={prompt.bookmark_count + prompt.rating_count}
                                 views={prompt.view_count}
-                                type={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
+                                category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
+                                promptType={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
                                 image={firstImage?.output_url}
                                 rating={prompt.average_rating}
                             />

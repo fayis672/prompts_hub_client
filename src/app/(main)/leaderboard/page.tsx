@@ -1,19 +1,51 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { PromptCard } from "@/components/home/PromptCard";
+import { PromptCardSkeleton } from "@/components/home/PromptCardSkeleton";
 import { Trophy } from "lucide-react";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
-import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { getCategories } from "@/lib/api/categories";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
+
+const ITEMS_PER_PAGE = 12;
 
 export default function LeaderboardPage() {
-    const { data: prompts = [], isLoading: loading, error: queryError } = useQuery({
+    const { ref: loadMoreRef, entry } = useIntersectionObserver({ threshold: 0.1 });
+
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: getCategories,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const { 
+        data: infiniteData, 
+        fetchNextPage, 
+        hasNextPage, 
+        isFetchingNextPage, 
+        isLoading: loading, 
+        error: queryError 
+    } = useInfiniteQuery({
         queryKey: ['leaderboard-page'],
-        queryFn: () => getPrompts({ sort: "most_bookmarked", limit: 20 }),
+        queryFn: ({ pageParam = 0 }) => getPrompts({ sort: "most_bookmarked", limit: ITEMS_PER_PAGE, skip: pageParam }),
+        getNextPageParam: (lastPage, allPages) => {
+            if (lastPage.length < ITEMS_PER_PAGE) return undefined;
+            return allPages.length * ITEMS_PER_PAGE;
+        },
+        initialPageParam: 0,
         staleTime: 5 * 60 * 1000, 
     });
 
+    useEffect(() => {
+        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    const prompts = infiniteData?.pages.flat() || [];
     const error = queryError ? (queryError as Error).message || "Failed to load leaderboard." : null;
 
     return (
@@ -29,7 +61,11 @@ export default function LeaderboardPage() {
             </div>
 
             {loading ? (
-                <div className="py-20"><LoadingAnimation text="Loading leaderboard..." /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                        <PromptCardSkeleton key={i} />
+                    ))}
+                </div>
             ) : error ? (
                 <div className="py-20 text-center text-destructive">{error}</div>
             ) : prompts.length === 0 ? (
@@ -40,32 +76,54 @@ export default function LeaderboardPage() {
                     />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {prompts.map((prompt, index) => {
-                        const firstImage = prompt.prompt_outputs?.find(o => o.output_type === "image" && o.output_url);
-                        const rankBackgrounds = ["bg-yellow-500 text-white", "bg-slate-400 text-white", "bg-amber-600 text-white"];
-                        return (
-                            <div key={prompt.id} className="relative mt-2">
-                                <div className={`absolute -top-3 -left-3 w-8 h-8 flex items-center justify-center rounded-full font-bold shadow-md z-10 ${rankBackgrounds[index] ?? "bg-muted-foreground text-background"}`}>
-                                    #{index + 1}
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {prompts.map((prompt, index) => {
+                            const firstImage = prompt.prompt_outputs?.find(o => o.output_type === "image" && o.output_url);
+                            const rankBackgrounds = ["bg-yellow-500 text-white", "bg-slate-400 text-white", "bg-amber-600 text-white"];
+                            return (
+                                <div key={prompt.id} className="relative mt-2">
+                                    <div className={`absolute -top-3 -left-3 w-8 h-8 flex items-center justify-center rounded-full font-bold shadow-md z-10 ${rankBackgrounds[index] ?? "bg-muted-foreground text-background"}`}>
+                                        #{index + 1}
+                                    </div>
+                                    <PromptCard
+                                        id={prompt.id}
+                                        title={prompt.title}
+                                        description={prompt.description}
+                                        promptText={prompt.prompt_text}
+                                        author={{ name: "Creator", avatar: "C" }}
+                                        tags={[]}
+                                        likes={prompt.bookmark_count + prompt.rating_count}
+                                        views={prompt.view_count}
+                                        category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
+                                        promptType={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
+                                        image={firstImage?.output_url}
+                                        rating={prompt.average_rating}
+                                    />
                                 </div>
-                                <PromptCard
-                                    id={prompt.id}
-                                    title={prompt.title}
-                                    description={prompt.description}
-                                    promptText={prompt.prompt_text}
-                                    author={{ name: "Creator", avatar: "C" }}
-                                    tags={[]}
-                                    likes={prompt.bookmark_count + prompt.rating_count}
-                                    views={prompt.view_count}
-                                    type={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
-                                    image={firstImage?.output_url}
-                                    rating={prompt.average_rating}
-                                />
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                        {isFetchingNextPage && (
+                            <>
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                            </>
+                        )}
+                    </div>
+
+                    {hasNextPage && (
+                        <div ref={loadMoreRef as any} className="h-20 flex items-center justify-center mt-10">
+                            {isFetchingNextPage && (
+                                <div className="flex gap-2">
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );

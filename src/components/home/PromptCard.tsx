@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Eye, Sparkles, Copy, ImageIcon, Play, Bot, BrainCircuit, Sparkle } from "lucide-react";
+import { Heart, Eye, Sparkles, Copy, ImageIcon, Play, Bot, BrainCircuit, Sparkle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -13,6 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { likePrompt, unlikePrompt } from "@/lib/api/prompts";
+import { createClient } from "@/lib/supabase/client";
 
 interface PromptCardProps {
     id?: string;
@@ -26,13 +28,18 @@ interface PromptCardProps {
     tags: string[];
     likes: number;
     views: number;
-    type: "Text" | "Image" | "Code" | "Video";
+    category: string;
+    promptType?: "Text" | "Image" | "Code" | "Video";
     image?: string;
     rating?: number;
 }
 
-export function PromptCard({ id, title, description, promptText, author, tags, likes, views, type, image, rating }: PromptCardProps) {
+export function PromptCard({ id, title, description, promptText, author, tags, likes, views, category, promptType = "Text", image, rating }: PromptCardProps) {
     const [imageError, setImageError] = useState(false);
+    const [isLiked, setIsLiked] = useState(false);
+    const [likesCount, setLikesCount] = useState(likes);
+    const [isLiking, setIsLiking] = useState(false);
+    const [supabase] = useState(() => createClient());
 
     const handleRunInAI = (e: React.MouseEvent, aiType: 'chatgpt' | 'claude' | 'gemini') => {
         e.preventDefault();
@@ -63,6 +70,37 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
         navigator.clipboard.writeText(promptText);
     };
 
+    const handleLikeToggle = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!id || isLiking) return;
+
+        try {
+            setIsLiking(true);
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                // Not logged in - could show a toast or redirect
+                // For now, just return
+                return;
+            }
+
+            const token = session.access_token;
+            if (isLiked) {
+                await unlikePrompt(id, token);
+                setIsLiked(false);
+                setLikesCount(prev => Math.max(0, prev - 1));
+            } else {
+                await likePrompt(id, token);
+                setIsLiked(true);
+                setLikesCount(prev => prev + 1);
+            }
+        } catch (error) {
+            console.error("Failed to toggle like:", error);
+        } finally {
+            setIsLiking(false);
+        }
+    };
+
     const cardContent = (
         <motion.div
             whileHover={{ y: -5 }}
@@ -80,11 +118,11 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
                     />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/10 group-hover:from-primary/10 group-hover:to-secondary/20 transition-all">
-                        {type === "Image" ? <ImageIcon className="w-10 h-10 text-primary/30" /> : <Sparkles className="w-10 h-10 text-primary/30" />}
+                        {promptType === "Image" ? <ImageIcon className="w-10 h-10 text-primary/30" /> : <Sparkles className="w-10 h-10 text-primary/30" />}
                     </div>
                 )}
                 <div className="absolute top-3 right-3 flex gap-2">
-                    <Badge variant="secondary" className="backdrop-blur-md bg-background/80 shadow-sm">{type}</Badge>
+                    <Badge variant="secondary" className="backdrop-blur-md bg-background/80 shadow-sm">{category}</Badge>
                 </div>
             </div>
 
@@ -116,10 +154,19 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
                 {/* Footer Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-border mt-auto">
                     <div className="flex gap-3 text-muted-foreground">
-                        <button className="flex items-center gap-1 text-xs hover:text-red-500 transition-colors" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                            <Heart className="w-4 h-4" /> <span>{likes}</span>
+                        <button 
+                            className={`flex items-center gap-1 text-xs transition-colors p-1 rounded-md hover:bg-muted ${isLiked ? 'text-red-500' : 'hover:text-red-500'}`} 
+                            onClick={handleLikeToggle}
+                            disabled={isLiking}
+                        >
+                            {isLiking ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                            )}
+                            <span>{likesCount}</span>
                         </button>
-                        <div className="flex items-center gap-1 text-xs">
+                        <div className="flex items-center gap-1 text-xs py-1">
                             <Eye className="w-4 h-4" /> <span>{views >= 1000 ? (views/1000).toFixed(1) + 'k' : views}</span>
                         </div>
                     </div>

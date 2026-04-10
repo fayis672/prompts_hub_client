@@ -140,12 +140,20 @@ export async function createPrompt(promptData: CreatePromptInput, token: string)
     }
 }
 
-export async function getPromptById(id: string): Promise<PromptRecommendation> {
+export async function getPromptById(id: string, token?: string): Promise<PromptRecommendation> {
+    const headers: HeadersInit = {
+        ...API_CONFIG.HEADERS,
+    };
+
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(
         `${API_CONFIG.BASE_URL}${API_ENDPOINTS.PROMPTS.BY_ID(id)}`,
         {
             method: 'GET',
-            headers: API_CONFIG.HEADERS,
+            headers: headers,
             cache: 'no-store',
         }
     );

@@ -28,4 +28,9 @@ export const API_ENDPOINTS = {
         LIST: '/api/v1/tags/',
         CREATE: '/api/v1/tags/',
     },
+    HISTORY: {
+        LIST: '/api/v1/history/',
+        CLEAR: '/api/v1/history/',
+        DELETE_ITEM: (id: string) => `/api/v1/history/${id}`,
+    },
 } as const

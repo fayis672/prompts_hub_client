@@ -1,44 +1,103 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { PromptCard } from "./PromptCard";
+import { PromptCardSkeleton } from "./PromptCardSkeleton";
 import { ArrowRight, Flame } from "lucide-react";
 import Link from "next/link";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
-import { LoadingAnimation } from "@/components/ui/LoadingAnimation";
+import { getCategories } from "@/lib/api/categories";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useIntersectionObserver } from "@/hooks/use-intersection-observer";
 
-export function TrendingSection() {
-    const { data: prompts = [], isLoading: loading, error: queryError } = useQuery({
-        queryKey: ['trending-prompts'],
-        queryFn: () => getPrompts({ sort: "most_viewed", limit: 4 }),
-        staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+const ITEMS_PER_PAGE = 12;
+
+interface TrendingSectionProps {
+    isFullPage?: boolean;
+}
+
+export function TrendingSection({ isFullPage = false }: TrendingSectionProps) {
+    const { ref: loadMoreRef, entry } = useIntersectionObserver({ threshold: 0.1 });
+
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: getCategories,
+        staleTime: 5 * 60 * 1000,
     });
 
-    const error = queryError ? (queryError as Error).message || "Failed to load trending prompts." : null;
+    // Use specific query based on whether it's a section or full page
+    const { 
+        data: infiniteData, 
+        fetchNextPage, 
+        hasNextPage, 
+        isFetchingNextPage, 
+        isLoading: infiniteLoading,
+        error: infiniteError 
+    } = useInfiniteQuery({
+        queryKey: ['trending-prompts', 'infinite'],
+        queryFn: ({ pageParam = 0 }) => getPrompts({ sort: "most_viewed", limit: ITEMS_PER_PAGE, skip: pageParam }),
+        getNextPageParam: (lastPage, allPages) => {
+            if (lastPage.length < ITEMS_PER_PAGE) return undefined;
+            return allPages.length * ITEMS_PER_PAGE;
+        },
+        initialPageParam: 0,
+        enabled: isFullPage,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const { 
+        data: sectionData = [], 
+        isLoading: sectionLoading, 
+        error: sectionError 
+    } = useQuery({
+        queryKey: ['trending-prompts', 'section'],
+        queryFn: () => getPrompts({ sort: "most_viewed", limit: 4 }),
+        enabled: !isFullPage,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    useEffect(() => {
+        if (isFullPage && entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+            fetchNextPage();
+        }
+    }, [isFullPage, entry?.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    const loading = isFullPage ? infiniteLoading : sectionLoading;
+    const error = isFullPage ? infiniteError : sectionError;
+    const prompts = isFullPage ? (infiniteData?.pages.flat() || []) : sectionData;
+
+    const errorMessage = error ? (error as Error).message || "Failed to load trending prompts." : null;
+
     return (
-        <section className="py-20">
+        <section className={isFullPage ? "py-8" : "py-20"}>
             <div className="flex items-center justify-between mb-10">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-rose-500/10 rounded-full">
                         <Flame className="w-6 h-6 text-rose-500 fill-rose-500" />
                     </div>
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight">Trending Now</h2>
+                        <h2 className={isFullPage ? "text-4xl font-bold tracking-tight" : "text-3xl font-bold tracking-tight"}>
+                            Trending Now
+                        </h2>
                         <p className="text-sm text-muted-foreground">Hottest prompts in the last 24 hours</p>
                     </div>
                 </div>
-                <Link href="/trending" className="flex items-center gap-1 text-primary font-medium hover:underline group">
-                    View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                {!isFullPage && (
+                    <Link href="/trending" className="flex items-center gap-1 text-primary font-medium hover:underline group">
+                        View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                )}
             </div>
 
             {loading ? (
-                <div className="py-16">
-                    <LoadingAnimation text="Loading trending prompts..." />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: isFullPage ? 6 : 3 }).map((_, i) => (
+                        <PromptCardSkeleton key={i} />
+                    ))}
                 </div>
-            ) : error ? (
-                <div className="py-16 text-center text-destructive">{error}</div>
+            ) : errorMessage ? (
+                <div className="py-16 text-center text-destructive">{errorMessage}</div>
             ) : prompts.length === 0 ? (
                 <div className="py-10">
                     <EmptyState 
@@ -47,27 +106,49 @@ export function TrendingSection() {
                     />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {prompts.map(prompt => {
-                        const firstImage = prompt.prompt_outputs?.find(o => o.output_type === 'image' && o.output_url);
-                        return (
-                            <PromptCard
-                                key={prompt.id}
-                                id={prompt.id}
-                                title={prompt.title}
-                                description={prompt.description}
-                                promptText={prompt.prompt_text}
-                                author={{ name: "Creator", avatar: "C" }}
-                                tags={[]}
-                                likes={prompt.bookmark_count + prompt.rating_count}
-                                views={prompt.view_count}
-                                type={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
-                                image={firstImage?.output_url}
-                                rating={prompt.average_rating}
-                            />
-                        );
-                    })}
-                </div>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {prompts.map(prompt => {
+                            const firstImage = prompt.prompt_outputs?.find(o => o.output_type === 'image' && o.output_url);
+                            return (
+                                <PromptCard
+                                    key={prompt.id}
+                                    id={prompt.id}
+                                    title={prompt.title}
+                                    description={prompt.description}
+                                    promptText={prompt.prompt_text}
+                                    author={{ name: "Creator", avatar: "C" }}
+                                    tags={[]}
+                                    likes={prompt.bookmark_count + prompt.rating_count}
+                                    views={prompt.view_count}
+                                    category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
+                                    promptType={prompt.prompt_type === "image_generation" ? "Image" : prompt.prompt_type === "code_generation" ? "Code" : "Text"}
+                                    image={firstImage?.output_url}
+                                    rating={prompt.average_rating}
+                                />
+                            );
+                        })}
+                        {isFullPage && isFetchingNextPage && (
+                            <>
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                                <PromptCardSkeleton />
+                            </>
+                        )}
+                    </div>
+
+                    {isFullPage && hasNextPage && (
+                        <div ref={loadMoreRef as any} className="h-20 flex items-center justify-center mt-10">
+                            {isFetchingNextPage && (
+                                <div className="flex gap-2">
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.2s]" />
+                                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:0.4s]" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
             )}
         </section>
     );

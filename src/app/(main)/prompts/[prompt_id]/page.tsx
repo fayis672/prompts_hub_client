@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getPromptById, likePrompt, unlikePrompt, PromptRecommendation } from "@/lib/api/prompts";
 import { getCommentsByPromptId, createComment, Comment } from "@/lib/api/comments";
@@ -35,12 +35,19 @@ export default function PromptDetailsPage() {
     const [submittingComment, setSubmittingComment] = useState(false);
     const [supabase] = useState(() => createClient());
     const [imageError, setImageError] = useState(false);
+    const hasFetched = useRef(false);
 
     useEffect(() => {
         const fetchDetails = async () => {
+            if (hasFetched.current) return;
+            hasFetched.current = true;
+            
             setLoading(true);
             try {
-                const data = await getPromptById(prompt_id);
+                const { data: { session } } = await supabase.auth.getSession();
+                const token = session?.access_token;
+                
+                const data = await getPromptById(prompt_id, token);
                 setPrompt(data);
                 
                 // Fetch category

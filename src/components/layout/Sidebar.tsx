@@ -103,11 +103,16 @@ export function Sidebar() {
                     </h3>
                     <nav className="flex flex-col gap-1">
                         <Link
-                            href="/history"
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:translate-x-1 group"
+                            href={user ? "/history" : "/login"}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all hover:translate-x-1 group",
+                                pathname === "/history" 
+                                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            )}
                         >
-                            <History className="w-4 h-4 group-hover:text-primary" />
-                            Recently Viewed
+                            <History className={cn("w-4 h-4 transition-transform group-hover:scale-110", pathname === "/history" ? "" : "group-hover:text-primary")} />
+                            History
                         </Link>
                     </nav>
                 </div>
