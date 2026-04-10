@@ -195,8 +195,8 @@ export default function SearchPageContent() {
             )}
 
             {query && loading && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {Array.from({ length: 8 }).map((_, i) => (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {Array.from({ length: 9 }).map((_, i) => (
                         <PromptCardSkeleton key={i} />
                     ))}
                 </div>
@@ -214,31 +214,33 @@ export default function SearchPageContent() {
                     <p className="text-sm text-muted-foreground mb-6">
                         {totalResults} result{totalResults !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                        {results.map((prompt) => (
-                            <PromptCard
-                                key={prompt.id}
-                                id={prompt.id}
-                                title={prompt.title}
-                                description={prompt.description || prompt.meta_description}
-                                promptText={prompt.prompt_text}
-                                author={{ name: prompt.user_id, avatar: '' }}
-                                tags={[]}
-                                likes={prompt.rating_count ?? 0}
-                                views={prompt.view_count ?? 0}
-                                category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
-                                promptType={
-                                    prompt.prompt_type === 'image' || prompt.prompt_type === 'image_generation' ? 'Image'
-                                    : prompt.prompt_type === 'code' || prompt.prompt_type === 'code_generation' ? 'Code'
-                                    : prompt.prompt_type === 'video' ? 'Video'
-                                    : 'Text'
-                                }
-                                image={prompt.prompt_outputs?.[0]?.output_url}
-                            />
-                        ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {results.map((prompt) => {
+                            const firstImage = prompt.prompt_outputs?.find(o => o.output_type === 'image' && o.output_url);
+                            return (
+                                <PromptCard
+                                    key={prompt.id}
+                                    id={prompt.id}
+                                    title={prompt.title}
+                                    description={prompt.description}
+                                    promptText={prompt.prompt_text}
+                                    author={{ name: "Creator", avatar: "C" }}
+                                    tags={[]}
+                                    likes={(prompt.bookmark_count ?? 0) + (prompt.rating_count ?? 0)}
+                                    views={prompt.view_count ?? 0}
+                                    category={categories.find(c => c.id === prompt.category_id)?.name || "General"}
+                                    promptType={
+                                        prompt.prompt_type === "image_generation" ? "Image" : 
+                                        prompt.prompt_type === "code_generation" ? "Code" : 
+                                        "Text"
+                                    }
+                                    image={firstImage?.output_url}
+                                    rating={prompt.average_rating}
+                                />
+                            );
+                        })}
                         {isFetchingNextPage && (
                             <>
-                                <PromptCardSkeleton />
                                 <PromptCardSkeleton />
                                 <PromptCardSkeleton />
                                 <PromptCardSkeleton />
