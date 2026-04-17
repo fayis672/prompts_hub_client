@@ -37,6 +37,13 @@ export interface PromptRecommendation {
         output_url?: string;
         output_type: string;
     }[];
+    prompt_tags?: {
+        tags?: {
+            id: string;
+            name: string;
+            slug: string;
+        } | null;
+    }[];
     author?: {
         id: string;
         username: string;

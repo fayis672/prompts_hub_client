@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { PromptCard } from "./PromptCard";
 import { PromptCardSkeleton } from "./PromptCardSkeleton";
-import { ListFilter, Grid as GridIcon, List as ListIcon, Sparkles, Layers } from "lucide-react";
+import { Sparkles, Layers } from "lucide-react";
 import { getRecommendedPrompts, getPrompts, PromptRecommendation } from "@/lib/api/prompts";
 import { getCategories, Category } from "@/lib/api/categories";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -89,19 +89,6 @@ export function RecentFeed() {
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg text-sm font-medium text-foreground shadow-sm hover:bg-accent transition-colors">
-                        <ListFilter className="w-4 h-4" /> Filter
-                    </button>
-                    <div className="flex items-center bg-card border border-border rounded-lg p-1 shadow-sm">
-                        <button className="p-1.5 rounded-md bg-secondary text-secondary-foreground">
-                            <GridIcon className="w-4 h-4" />
-                        </button>
-                        <button className="p-1.5 rounded-md hover:bg-accent text-muted-foreground transition-colors">
-                            <ListIcon className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
             </div>
 
             {/* Category Chips */}
@@ -164,10 +151,11 @@ export function RecentFeed() {
                                     promptText={prompt.prompt_text}
                                     author={{ 
                                         name: prompt.author?.display_name || prompt.author?.username || "Creator", 
-                                        avatar: prompt.author?.avatar_url || "" 
+                                        avatar: prompt.author?.avatar_url || "",
+                                        username: prompt.author?.username,
                                     }}
 
-                                    tags={[]}
+                                    tags={prompt.prompt_tags?.map(pt => pt.tags?.name).filter(Boolean) as string[] || []}
                                     likes={prompt.bookmark_count + prompt.rating_count}
                                     views={prompt.view_count}
                                     category={categories.find(c => c.id === prompt.category_id)?.name || "General"}

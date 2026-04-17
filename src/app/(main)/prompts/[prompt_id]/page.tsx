@@ -263,20 +263,24 @@ export default function PromptDetailsPage() {
                                 <h1 className="text-3xl font-bold text-foreground mb-4 leading-tight">{prompt.title}</h1>
                             
                             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/40 border border-border/50">
-                                <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => router.push(`/users/${prompt.author?.username}`)}
+                                    disabled={!prompt.author?.username}
+                                    className="flex items-center gap-3 group/author hover:opacity-80 transition-opacity disabled:cursor-default"
+                                >
                                     {prompt.author?.avatar_url ? (
                                         <img 
                                             src={prompt.author.avatar_url} 
                                             alt={prompt.author.display_name || prompt.author.username} 
-                                            className="w-10 h-10 rounded-full object-cover border border-border" 
+                                            className="w-10 h-10 rounded-full object-cover border border-border ring-2 ring-transparent group-hover/author:ring-primary/40 transition-all" 
                                         />
                                     ) : (
-                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm text-primary border border-primary/20">
+                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm text-primary border border-primary/20 ring-2 ring-transparent group-hover/author:ring-primary/40 transition-all">
                                             {(prompt.author?.display_name || prompt.author?.username || "C").charAt(0).toUpperCase()}
                                         </div>
                                     )}
                                     <div>
-                                        <div className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                                        <div className="font-semibold text-foreground text-sm flex items-center gap-1.5 group-hover/author:text-primary transition-colors">
                                             {prompt.author?.display_name || prompt.author?.username || "Creator"}
                                             <Badge variant="outline" className="text-[9px] h-4 px-1.5 bg-primary/5 text-primary border-primary/20 leading-none">
                                                 PRO
@@ -291,7 +295,7 @@ export default function PromptDetailsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </button>
 
                                 <div className="flex items-center gap-2">
                                     <button 
@@ -315,11 +319,22 @@ export default function PromptDetailsPage() {
                             </p>
 
                             {/* Tags */}
-                            {prompt.category_id && (
+                            {(prompt.category_id || (prompt.prompt_tags && prompt.prompt_tags.length > 0)) && (
                                 <div className="flex flex-wrap gap-1.5 mb-5">
-                                    <Badge variant="outline" className="text-xs text-primary border-primary/20 bg-primary/5 font-medium">
-                                        {categoryName || "Loading..."}
-                                    </Badge>
+                                    {prompt.category_id && (
+                                        <Badge variant="outline" className="text-xs text-primary border-primary/20 bg-primary/5 font-medium">
+                                            {categoryName || "Loading..."}
+                                        </Badge>
+                                    )}
+                                    {prompt.prompt_tags?.filter(pt => pt.tags).map(pt => (
+                                        <Badge
+                                            key={pt.tags!.id}
+                                            variant="secondary"
+                                            className="text-xs font-medium cursor-default"
+                                        >
+                                            #{pt.tags!.name}
+                                        </Badge>
+                                    ))}
                                 </div>
                             )}
 

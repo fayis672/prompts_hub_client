@@ -68,10 +68,11 @@ export function MostLikedSection() {
                                 promptText={prompt.prompt_text}
                                 author={{ 
                                     name: prompt.author?.display_name || prompt.author?.username || "Creator", 
-                                    avatar: prompt.author?.avatar_url || "" 
+                                    avatar: prompt.author?.avatar_url || "",
+                                    username: prompt.author?.username,
                                 }}
 
-                                tags={[]}
+                                tags={prompt.prompt_tags?.map(pt => pt.tags?.name).filter(Boolean) as string[] || []}
                                 likes={prompt.bookmark_count + prompt.rating_count}
                                 views={prompt.view_count}
                                 category={categories.find(c => c.id === prompt.category_id)?.name || "General"}

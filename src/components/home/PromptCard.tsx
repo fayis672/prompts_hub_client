@@ -5,6 +5,7 @@ import { Heart, Eye, Sparkles, Copy, ImageIcon, Play, Bot, BrainCircuit, Sparkle
 import { Badge } from "@/components/ui/Badge";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ interface PromptCardProps {
     author: {
         name: string;
         avatar: string;
+        username?: string;
     };
     tags: string[];
     likes: number;
@@ -40,6 +42,15 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
     const [likesCount, setLikesCount] = useState(likes);
     const [isLiking, setIsLiking] = useState(false);
     const [supabase] = useState(() => createClient());
+    const router = useRouter();
+
+    const handleAuthorClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (author.username) {
+            router.push(`/users/${author.username}`);
+        }
+    };
 
     const handleRunInAI = (e: React.MouseEvent, aiType: 'chatgpt' | 'claude' | 'gemini') => {
         e.preventDefault();
@@ -129,15 +140,21 @@ export function PromptCard({ id, title, description, promptText, author, tags, l
             <div className="p-5 flex flex-col flex-grow">
                 {/* Author */}
                 <div className="flex items-center gap-2 mb-3">
-                    {author.avatar && author.avatar.startsWith('http') ? (
-                        <img src={author.avatar} alt={author.name} className="w-6 h-6 rounded-full object-cover" />
-                    ) : (
-                        <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                            {author.name.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    <span className="text-xs text-muted-foreground font-medium">{author.name}</span>
-                    {rating && (
+                    <button
+                        onClick={handleAuthorClick}
+                        className="flex items-center gap-2 group/author hover:opacity-80 transition-opacity"
+                        title={author.username ? `View @${author.username}'s profile` : undefined}
+                    >
+                        {author.avatar && author.avatar.startsWith('http') ? (
+                            <img src={author.avatar} alt={author.name} className="w-6 h-6 rounded-full object-cover ring-1 ring-transparent group-hover/author:ring-primary/50 transition-all" />
+                        ) : (
+                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary ring-1 ring-transparent group-hover/author:ring-primary/50 transition-all">
+                                {author.name.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        <span className="text-xs text-muted-foreground font-medium group-hover/author:text-primary transition-colors">{author.name}</span>
+                    </button>
+                    {rating != null && rating > 0 && (
                         <span className="ml-auto text-xs font-bold text-amber-500 flex items-center gap-1">
                             ★ {rating}
                         </span>
