@@ -132,7 +132,7 @@ export function CreatePromptForm({ categories, initialTags }: CreatePromptFormPr
                     <div className="sticky top-0 z-30 bg-background/80 backdrop-blur border-b border-border">
                         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3 min-w-0">
-                                <Link href="/prompts" className="text-muted-foreground hover:text-foreground shrink-0">
+                                <Link href="/" className="text-muted-foreground hover:text-foreground shrink-0">
                                     <ArrowLeft className="h-5 w-5" />
                                 </Link>
                                 <div className="min-w-0">

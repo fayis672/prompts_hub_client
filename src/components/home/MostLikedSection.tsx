@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { PromptCard } from "./PromptCard";
+import { PromptCardSkeleton } from "./PromptCardSkeleton";
 import { ArrowRight, Star } from "lucide-react";
 import Link from "next/link";
 import { getPrompts, PromptRecommendation } from "@/lib/api/prompts";
@@ -35,7 +36,7 @@ export function MostLikedSection() {
                         <p className="text-sm text-muted-foreground">Top rated prompts by the community</p>
                     </div>
                 </div>
-                <Link href="/prompts?sort=most_liked" className="flex items-center gap-1 text-primary font-medium hover:underline group">
+                <Link href="/most-liked" className="flex items-center gap-1 text-primary font-medium hover:underline group">
                     View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
             </div>
